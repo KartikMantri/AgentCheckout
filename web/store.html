@@ -59,6 +59,59 @@
     display: flex; align-items: center; gap: 5px;
   }
   .powered-by b{ color: var(--ink-soft); font-weight: 600; }
+  .header-right{ display: flex; align-items: center; gap: 18px; }
+
+  #cart-btn{
+    display: flex; align-items: center; gap: 7px;
+    background: none; border: 1px solid var(--line); color: var(--ink);
+    font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 12.5px;
+    padding: 7px 13px; cursor: pointer;
+  }
+  #cart-btn:hover{ border-color: var(--ink); }
+  #cart-btn-count{ font-family: "IBM Plex Mono", monospace; color: var(--boundary); }
+
+  .cart-drawer-backdrop{
+    position: fixed; inset: 0; background: rgba(10,12,16,0.5); z-index: 90;
+    display: none; justify-content: flex-end;
+  }
+  .cart-drawer-backdrop.open{ display: flex; }
+  .cart-drawer{
+    width: min(400px, 100vw); height: 100%; background: var(--paper-raised);
+    display: flex; flex-direction: column; box-shadow: -20px 0 50px -20px rgba(10,12,16,0.4);
+  }
+  .cart-drawer-head{
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px; border-bottom: 1px solid var(--line-soft); flex: 0 0 auto; position: relative;
+  }
+  .cart-drawer-head h2{ font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 700; font-size: 18px; margin: 0; }
+  .cart-drawer-head .lightbox-close{ position: static; background: none; border: 1px solid var(--line); color: var(--ink-soft); }
+  .cart-drawer-body{ flex: 1 1 auto; overflow-y: auto; padding: 8px 20px 20px; display: flex; flex-direction: column; }
+  .cd-empty{ margin: auto; color: var(--ink-faint); font-size: 13px; text-align: center; }
+  .cd-item{ display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line-soft); align-items: center; }
+  .cd-item .cd-thumb{ width: 56px; height: 56px; object-fit: cover; flex: 0 0 auto; background: var(--paper); }
+  .cd-item .cd-info{ flex: 1 1 auto; min-width: 0; }
+  .cd-item .cd-name{ font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 13.5px; }
+  .cd-item .cd-meta{ font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
+  .cd-item .cd-remove{
+    background: none; border: 1px solid var(--line); color: var(--ink-faint);
+    width: 26px; height: 26px; cursor: pointer; flex: 0 0 auto; font-size: 14px; line-height: 1;
+  }
+  .cd-item .cd-remove:hover{ border-color: var(--boundary); color: var(--boundary); }
+  .cart-drawer-footer{ flex: 0 0 auto; border-top: 1px solid var(--line); padding: 16px 20px 20px; }
+  .cart-drawer-footer .row{ display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; color: var(--ink-soft); }
+  .cart-drawer-footer .row.total{ font-size: 17px; font-weight: 600; color: var(--ink); padding-top: 8px; }
+  .cart-drawer-footer .amount{ font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .cd-clear-btn{
+    width: 100%; background: none; border: 1px solid var(--line); color: var(--ink-soft);
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; padding: 8px; cursor: pointer; margin-top: 14px;
+  }
+  .cd-clear-btn:hover{ border-color: var(--boundary); color: var(--boundary); }
+  .cd-checkout-btn{
+    width: 100%; background: var(--ink); color: var(--paper); border: none;
+    font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 13px;
+    padding: 11px; cursor: pointer; margin-top: 16px;
+  }
+  .cd-checkout-btn:hover{ background: var(--boundary); }
 
   .demo-banner{
     background: var(--boundary-soft); border-bottom: 1px solid var(--boundary);
@@ -288,8 +341,24 @@
 
 <header>
   <div class="wordmark">Stridewell</div>
-  <div class="powered-by">Agent-transactable storefront · <b>Powered by AgentCheckout</b></div>
+  <div class="header-right">
+    <div class="powered-by">Agent-transactable storefront · <b>Powered by AgentCheckout</b></div>
+    <button id="cart-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      Cart <span id="cart-btn-count">0</span>
+    </button>
+  </div>
 </header>
+
+<div class="cart-drawer-backdrop" id="cart-drawer-backdrop">
+  <div class="cart-drawer" id="cart-drawer">
+    <div class="cart-drawer-head">
+      <h2>Your cart</h2>
+      <button class="lightbox-close" id="cart-drawer-close">&times;</button>
+    </div>
+    <div class="cart-drawer-body" id="cart-drawer-body"></div>
+  </div>
+</div>
 
 <section class="hero">
   <div class="hero-bg" style="background-image:url('https://images.pexels.com/photos/9207813/pexels-photo-9207813.jpeg?auto=compress&cs=tinysrgb&w=1400')"></div>
@@ -592,6 +661,7 @@ async function sendChat(text){
     removeTyping();
     addChatMsg(data.error ? 'system' : 'agent', data.reply);
     maybeShowPaymentCard(data.events);
+    if(data.cart) updateCartBadge(data.cart);
   }catch(err){
     removeTyping();
     addChatMsg('system', 'Could not reach the server: ' + err);
@@ -715,8 +785,93 @@ function buyNow(p){
 chatSend.addEventListener('click', () => { const t = chatInput.value; chatInput.value = ''; sendChat(t); });
 chatInput.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); const t = chatInput.value; chatInput.value = ''; sendChat(t); } });
 
-/* ---- load catalog ---- */
-fetch('/api/catalog').then(r => r.json()).then(data => { CATALOG = data; applyFiltersAndRender(); });
+/* ---- cart drawer: manual, direct control over the cart ---- */
+const cartBtn = document.getElementById('cart-btn');
+const cartDrawerBackdrop = document.getElementById('cart-drawer-backdrop');
+const cartDrawerBody = document.getElementById('cart-drawer-body');
+
+function updateCartBadge(cart){
+  const count = cart && cart.items ? cart.items.reduce((sum, i) => sum + i.qty, 0) : 0;
+  document.getElementById('cart-btn-count').textContent = count;
+}
+
+function cartItemRowHTML(item){
+  const product = CATALOG.find(p => p.id === item.product_id);
+  const name = product ? product.name : item.product_id;
+  const thumb = product ? photoFor(product.id, 100) : '';
+  return `
+    <div class="cd-item" data-id="${item.product_id}">
+      <img class="cd-thumb" src="${thumb}" alt="${name}">
+      <div class="cd-info">
+        <div class="cd-name">${name}</div>
+        <div class="cd-meta">qty ${item.qty} &middot; Rs.${item.unit_price} &middot; Rs.${item.line_total}</div>
+      </div>
+      <button class="cd-remove" title="Remove" data-id="${item.product_id}">&times;</button>
+    </div>`;
+}
+
+async function renderCartDrawer(){
+  const cart = await fetch('/api/cart/' + sessionId).then(r => r.json());
+  updateCartBadge(cart);
+
+  if(!cart.items || cart.items.length === 0){
+    cartDrawerBody.innerHTML = '<div class="cd-empty">Your cart is empty. Browse below, or ask the assistant for a recommendation.</div>';
+    return;
+  }
+
+  let html = cart.items.map(cartItemRowHTML).join('');
+  html += `<div class="cart-drawer-footer">
+      <div class="row"><span>Subtotal</span><span class="amount">Rs.${cart.subtotal}</span></div>`;
+  if(cart.discount_pct){
+    html += `<div class="row"><span>Discount (${cart.discount_pct}%)</span><span class="amount">-Rs.${cart.subtotal - cart.total}</span></div>`;
+  }
+  html += `<div class="row total"><span>Total</span><span class="amount">Rs.${cart.total}</span></div>
+      <button class="cd-checkout-btn" id="cd-checkout">Checkout</button>
+      <button class="cd-clear-btn" id="cd-clear">Clear cart</button>
+    </div>`;
+  cartDrawerBody.innerHTML = html;
+
+  cartDrawerBody.querySelectorAll('.cd-remove').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const updated = await fetch(`/api/cart/${sessionId}/remove`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({product_id: btn.dataset.id}),
+      }).then(r => r.json());
+      updateCartBadge(updated);
+      renderCartDrawer();
+    });
+  });
+
+  const clearBtn = document.getElementById('cd-clear');
+  if(clearBtn) clearBtn.addEventListener('click', async () => {
+    clearBtn.disabled = true;
+    const updated = await fetch(`/api/cart/${sessionId}/clear`, { method: 'POST' }).then(r => r.json());
+    updateCartBadge(updated);
+    renderCartDrawer();
+  });
+
+  const checkoutBtn = document.getElementById('cd-checkout');
+  if(checkoutBtn) checkoutBtn.addEventListener('click', () => {
+    closeCartDrawer();
+    openChat();
+    sendChat('Create the order for everything currently in my cart.');
+  });
+}
+
+function openCartDrawer(){ cartDrawerBackdrop.classList.add('open'); renderCartDrawer(); }
+function closeCartDrawer(){ cartDrawerBackdrop.classList.remove('open'); }
+
+cartBtn.addEventListener('click', openCartDrawer);
+document.getElementById('cart-drawer-close').addEventListener('click', closeCartDrawer);
+cartDrawerBackdrop.addEventListener('click', (e) => { if(e.target === cartDrawerBackdrop) closeCartDrawer(); });
+
+/* ---- load catalog, then the cart badge (needs CATALOG for item names) ---- */
+fetch('/api/catalog').then(r => r.json()).then(data => {
+  CATALOG = data;
+  applyFiltersAndRender();
+  fetch('/api/cart/' + sessionId).then(r => r.json()).then(updateCartBadge);
+});
 </script>
 </body>
 </html>

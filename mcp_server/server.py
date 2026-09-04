@@ -61,6 +61,19 @@ def add_to_cart(product_id: str, qty: int) -> str:
 
 
 @mcp.tool()
+def remove_from_cart(product_id: str) -> str:
+    """Remove a product entirely from the cart, regardless of quantity."""
+    args = {"product_id": product_id}
+    return json.dumps(dispatch("remove_from_cart", json.dumps(args), _cart_id()))
+
+
+@mcp.tool()
+def clear_cart() -> str:
+    """Empty the entire cart, removing every item and any applied discount."""
+    return json.dumps(dispatch("clear_cart", "{}", _cart_id()))
+
+
+@mcp.tool()
 def apply_discount(pct: float) -> str:
     """Apply a percentage discount to the cart. Rejected above the auto-approval cap — escalate instead of arguing."""
     args = {"pct": pct}

@@ -21,8 +21,10 @@ from pydantic import BaseModel
 
 from agent.loop import run
 from agent.session import get_session, reset_session
-from audit.logger import read_all
+from audit.logger import log_event, read_all
+from domain.cart import clear_cart as clear_cart_raw
 from domain.cart import get_cart, init_cart_tables
+from domain.cart import remove_item as remove_item_raw
 from domain.catalog import init_db, list_all
 from domain.orders import get_order, init_order_tables, verify_and_capture_payment
 from domain.payments import is_live
@@ -89,6 +91,38 @@ def reset(session_id: str):
     reset_session(session_id)
     session = get_session(session_id)
     return get_cart(session["cart_id"])
+
+
+class RemoveItemRequest(BaseModel):
+    product_id: str
+
+
+@app.post("/api/cart/{session_id}/remove")
+def cart_remove(session_id: str, req: RemoveItemRequest):
+    """Direct, no-guardrail path — removing your own item has no
+    business-limit at stake, so there's no reason to route it through
+    the agent loop. Still logged, so the audit trail stays honest about
+    who actually did what: 'customer_direct', not 'agent'."""
+    session = get_session(session_id)
+    result = remove_item_raw(session["cart_id"], req.product_id)
+    log_event(
+        session_id=session_id, actor="customer_direct", tool="remove_from_cart",
+        args_json=req.model_dump_json(), verdict_json={"allowed": True, "reason": "ok", "escalation_required": False},
+        outcome_json=str(result), provider=None, model=None, is_failover=None, tokens=None, latency_ms=None,
+    )
+    return result["cart"]
+
+
+@app.post("/api/cart/{session_id}/clear")
+def cart_clear(session_id: str):
+    session = get_session(session_id)
+    result = clear_cart_raw(session["cart_id"])
+    log_event(
+        session_id=session_id, actor="customer_direct", tool="clear_cart",
+        args_json="{}", verdict_json={"allowed": True, "reason": "ok", "escalation_required": False},
+        outcome_json=str(result), provider=None, model=None, is_failover=None, tokens=None, latency_ms=None,
+    )
+    return result["cart"]
 
 
 @app.get("/api/razorpay-config")
