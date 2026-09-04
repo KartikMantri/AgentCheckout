@@ -1,0 +1,8 @@
+openai
+pydantic
+python-dotenv
+razorpay
+fastapi
+uvicorn
+mcp<2
+truststore

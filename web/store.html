@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stridewell — Running Shoes</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%91%9F</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+  :root{
+    --paper: #eef1f4; --paper-raised: #ffffff; --ink: #161b22; --ink-soft: #56606f; --ink-faint: #9aa3b0;
+    --line: #b7c0cc; --line-soft: #d8dee5;
+    --untrusted: #a06a20; --untrusted-soft: rgba(160,106,32,0.10);
+    --trusted: #1c6363; --trusted-soft: rgba(28,99,99,0.09);
+    --boundary: #a23a2c; --boundary-soft: rgba(162,58,44,0.09);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper: #10141b; --paper-raised: #171d27; --ink: #e8ecf1; --ink-soft: #a9b2c1; --ink-faint: #566073;
+      --line: #2d3644; --line-soft: #232b37;
+      --untrusted: #d9a352; --untrusted-soft: rgba(217,163,82,0.13);
+      --trusted: #4bb0a6; --trusted-soft: rgba(75,176,166,0.13);
+      --boundary: #dd6a56; --boundary-soft: rgba(221,106,86,0.12);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper: #10141b; --paper-raised: #171d27; --ink: #e8ecf1; --ink-soft: #a9b2c1; --ink-faint: #566073;
+    --line: #2d3644; --line-soft: #232b37;
+    --untrusted: #d9a352; --untrusted-soft: rgba(217,163,82,0.13);
+    --trusted: #4bb0a6; --trusted-soft: rgba(75,176,166,0.13);
+    --boundary: #dd6a56; --boundary-soft: rgba(221,106,86,0.12);
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+  }
+  .mono{ font-family: "IBM Plex Mono", monospace; }
+  ::selection{ background: var(--boundary-soft); }
+  :focus-visible{ outline: 2px solid var(--boundary); outline-offset: 2px; }
+  button{ font-family: inherit; }
+  a{ color: inherit; }
+  img{ max-width: 100%; display: block; }
+
+  /* ---- header ---- */
+  header{
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px clamp(18px, 4vw, 48px);
+    border-bottom: 1px solid var(--line-soft); background: var(--paper-raised);
+    position: sticky; top: 0; z-index: 20;
+  }
+  .wordmark{ font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .powered-by{
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--ink-faint); letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .powered-by b{ color: var(--ink-soft); font-weight: 600; }
+
+  /* ---- hero ---- */
+  .hero{
+    position: relative; overflow: hidden; min-height: 340px; display: flex; align-items: center;
+    border-bottom: 1px solid var(--line-soft); color: #fff;
+  }
+  .hero-bg{ position: absolute; inset: 0; background-size: cover; background-position: center 30%; }
+  .hero-scrim{ position: absolute; inset: 0; background: linear-gradient(100deg, rgba(10,12,16,0.86) 0%, rgba(10,12,16,0.55) 48%, rgba(10,12,16,0.2) 78%); }
+  .hero-content{ position: relative; max-width: 56ch; padding: 64px clamp(18px, 4vw, 48px); }
+  .eyebrow{
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #e0a08e; margin: 0 0 14px; display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before{ content: ""; width: 20px; height: 1px; background: #e0a08e; }
+  h1{
+    font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 700; font-size: clamp(30px, 4.2vw, 46px);
+    line-height: 1.05; margin: 0 0 14px; letter-spacing: -0.01em; color: #fff;
+  }
+  .hero-sub{ font-size: 15.5px; line-height: 1.6; color: rgba(255,255,255,0.82); max-width: 48ch; margin: 0; }
+
+  /* ---- filters ---- */
+  .filter-bar{
+    position: sticky; top: 57px; z-index: 15; background: var(--paper);
+    border-bottom: 1px solid var(--line-soft);
+    padding: 12px clamp(18px, 4vw, 48px);
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .filter-label{ font-family: "IBM Plex Mono", monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); margin-right: 4px; }
+  .chip{
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; padding: 5px 11px;
+    border: 1px solid var(--line); background: var(--paper-raised); color: var(--ink-soft); cursor: pointer;
+  }
+  .chip:hover{ border-color: var(--ink-soft); }
+  .chip.active{ background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .filter-spacer{ flex: 1 1 auto; }
+  select#sort{
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; padding: 5px 9px;
+    border: 1px solid var(--line); background: var(--paper-raised); color: var(--ink-soft);
+  }
+  #result-count{ font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-faint); }
+
+  /* ---- grid ---- */
+  .grid-wrap{ padding: 30px clamp(18px, 4vw, 48px) 100px; }
+  .grid{
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 22px;
+    perspective: 1200px;
+  }
+
+  .card{
+    background: var(--paper-raised); border: 1px solid var(--line-soft); cursor: pointer;
+    transform-style: preserve-3d; will-change: transform; overflow: hidden;
+    transition: transform 0.35s cubic-bezier(.2,.8,.2,1), box-shadow 0.35s ease;
+  }
+  .card:hover{ box-shadow: 0 22px 40px -18px rgba(20,25,35,0.4); border-color: var(--line); }
+  .card.sold-out{ opacity: 0.7; }
+
+  .card-art{
+    position: relative; aspect-ratio: 4/3; overflow: hidden; background: var(--line-soft);
+  }
+  .card-photo{
+    position: absolute; inset: -6%; width: 112%; height: 112%; object-fit: cover;
+    transform: translateZ(20px) scale(1); transition: transform 0.35s ease, filter 0.35s ease;
+  }
+  .card.sold-out .card-photo{ filter: grayscale(0.75) brightness(0.85); }
+  .art-scrim{ position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.45) 100%); pointer-events: none; }
+  .arch-badge{
+    position: absolute; top: 10px; left: 10px; transform: translateZ(50px);
+    font-family: "IBM Plex Mono", monospace; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 3px 8px; color: #fff; backdrop-filter: blur(3px);
+  }
+  .badge{
+    position: absolute; top: 10px; right: 10px; font-family: "IBM Plex Mono", monospace; font-size: 10px;
+    letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 8px; background: var(--boundary); color: #fff;
+    transform: translateZ(50px);
+  }
+  .expand-hint{
+    position: absolute; bottom: 10px; right: 10px; font-family: "IBM Plex Mono", monospace; font-size: 10px;
+    color: #fff; opacity: 0; transition: opacity 0.25s ease; transform: translateZ(50px);
+  }
+  .card:hover .expand-hint{ opacity: 0.85; }
+
+  .card-body{ padding: 14px 16px 16px; transform: translateZ(15px); }
+  .card-name{ font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 15.5px; margin: 0 0 6px; }
+  .card-tags{ display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .tag{
+    font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.02em;
+    padding: 2px 7px; border: 1px solid var(--line-soft); color: var(--ink-soft);
+  }
+  .card-row{ display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .price{ font-family: "IBM Plex Mono", monospace; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .stock-note{ font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--ink-faint); }
+  .stock-note.low{ color: var(--untrusted); }
+  .stock-note.out{ color: var(--boundary); }
+
+  .btn-cta{
+    width: 100%; background: var(--ink); color: var(--paper); border: none;
+    font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 12.5px;
+    letter-spacing: 0.02em; padding: 10px; cursor: pointer;
+  }
+  .btn-cta:hover{ background: var(--boundary); }
+  .card.sold-out .btn-cta{ background: var(--paper); color: var(--ink-soft); border: 1px solid var(--line); }
+  .card.sold-out .btn-cta:hover{ border-color: var(--boundary); color: var(--boundary); background: var(--paper); }
+
+  /* ---- lightbox ---- */
+  .lightbox-backdrop{
+    position: fixed; inset: 0; background: rgba(10,12,16,0.65); backdrop-filter: blur(3px);
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 24px;
+  }
+  .lightbox-backdrop.open{ display: flex; }
+  .lightbox{
+    background: var(--paper-raised); max-width: 760px; width: 100%; max-height: 88vh; overflow: auto;
+    display: grid; grid-template-columns: 1.15fr 1fr; border: 1px solid var(--line);
+  }
+  @media (max-width: 640px){ .lightbox{ grid-template-columns: 1fr; } }
+  .lightbox-art{
+    position: relative; background: var(--line-soft); overflow: hidden; min-height: 280px; perspective: 1000px;
+  }
+  .lightbox-art img{ position: absolute; inset: -8%; width: 116%; height: 116%; object-fit: cover; transition: transform 0.2s ease; }
+  .lightbox-close{
+    position: absolute; top: 12px; right: 12px; background: rgba(10,12,16,0.5); border: 1px solid rgba(255,255,255,0.3);
+    color: #fff; width: 30px; height: 30px; cursor: pointer; font-size: 15px; line-height: 1; z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .lightbox-close:hover{ border-color: #fff; }
+  .lightbox-body{ padding: 26px 24px; display: flex; flex-direction: column; }
+  .lightbox-body h3{ font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 700; font-size: 22px; margin: 0 0 4px; }
+  .lightbox-body .price{ font-size: 22px; margin-bottom: 14px; }
+  .lightbox-body .card-tags{ margin-bottom: 16px; }
+  .lightbox-body .stock-note{ margin-bottom: 14px; font-size: 12px; }
+  .lightbox-body .btn-cta{ margin-top: auto; }
+  .photo-credit{ font-family: "IBM Plex Mono", monospace; font-size: 9.5px; color: var(--ink-faint); margin-top: 14px; }
+
+  /* ---- chat widget ---- */
+  #chat-launcher{
+    position: fixed; bottom: 22px; right: 22px; z-index: 50;
+    background: var(--ink); color: var(--paper); border: none; padding: 13px 20px;
+    font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.02em;
+    cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 26px -10px rgba(20,25,35,0.4);
+  }
+  #chat-launcher .dot{ width: 7px; height: 7px; border-radius: 50%; background: var(--trusted); }
+  #chat-panel{
+    position: fixed; bottom: 22px; right: 22px; z-index: 50; width: min(380px, calc(100vw - 44px));
+    height: min(560px, calc(100vh - 100px)); background: var(--paper-raised); border: 1px solid var(--line);
+    display: none; flex-direction: column; box-shadow: 0 24px 60px -20px rgba(20,25,35,0.45);
+  }
+  #chat-panel.open{ display: flex; }
+  .chat-head{
+    display: flex; align-items: center; justify-content: space-between; padding: 12px 14px;
+    border-bottom: 1px solid var(--line-soft); flex: 0 0 auto;
+  }
+  .chat-head .title{ font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 13px; }
+  .chat-head .sub{ font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--ink-faint); }
+  .chat-head-actions{ display: flex; gap: 8px; align-items: center; }
+  .chat-head-actions a{ font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--ink-faint); text-decoration: none; border-bottom: 1px dotted var(--line); }
+  .chat-head-actions a:hover{ color: var(--boundary); }
+  .chat-close{ background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 16px; }
+  .chat-close:hover{ color: var(--boundary); }
+  .chat-messages{ flex: 1 1 auto; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+  .chat-empty{ color: var(--ink-faint); font-size: 12.5px; margin: auto; text-align: center; max-width: 26ch; }
+  .cmsg .role{ font-family: "IBM Plex Mono", monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 3px; }
+  .cmsg.user .role{ color: var(--ink-faint); }
+  .cmsg.agent .role{ color: var(--trusted); }
+  .cmsg.system .role{ color: var(--boundary); }
+  .cmsg .bubble{ font-size: 13.5px; line-height: 1.55; }
+  .cmsg.user .bubble{ color: var(--ink-soft); }
+  .cmsg table{ border-collapse: collapse; font-size: 11.5px; margin: 6px 0; }
+  .cmsg th, .cmsg td{ border: 1px solid var(--line-soft); padding: 4px 7px; text-align: left; }
+  .cmsg strong{ font-weight: 600; }
+  .cmsg p{ margin: 0 0 6px; }
+  .typing span{ width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); display: inline-block; margin-right: 3px; animation: pulse 1.1s ease-in-out infinite; }
+  .typing span:nth-child(2){ animation-delay: 0.15s; } .typing span:nth-child(3){ animation-delay: 0.3s; }
+  @keyframes pulse{ 0%,60%,100%{ opacity: 0.25; } 30%{ opacity: 1; } }
+  .chat-input-row{ flex: 0 0 auto; border-top: 1px solid var(--line-soft); padding: 10px; display: flex; gap: 8px; }
+  .payment-card{
+    border: 1px solid var(--line); background: var(--paper); padding: 12px 14px;
+  }
+  .payment-card .pc-head{ display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .payment-card .pc-order{ font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--ink-faint); }
+  .payment-card .pc-amount{ font-family: "IBM Plex Mono", monospace; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .payment-card .pc-mode{ font-family: "IBM Plex Mono", monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 6px; margin-bottom: 8px; display: inline-block; }
+  .payment-card .pc-mode.live{ color: var(--trusted); border: 1px solid var(--trusted); }
+  .payment-card .pc-mode.mock{ color: var(--untrusted); border: 1px solid var(--untrusted); }
+  .payment-card .pc-pay-btn{
+    width: 100%; background: var(--ink); color: var(--paper); border: none;
+    font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 12.5px;
+    padding: 9px; cursor: pointer; margin-top: 6px;
+  }
+  .payment-card .pc-pay-btn:hover{ background: var(--boundary); }
+  .payment-card .pc-pay-btn:disabled{ opacity: 0.5; cursor: default; }
+  .payment-card .pc-status{ font-family: "IBM Plex Mono", monospace; font-size: 11px; margin-top: 8px; }
+  .payment-card .pc-status.paid{ color: var(--trusted); }
+  .payment-card .pc-status.failed{ color: var(--boundary); }
+
+  .chat-input-row textarea{
+    flex: 1 1 auto; resize: none; border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+    font-family: "IBM Plex Sans", sans-serif; font-size: 13px; padding: 8px 10px; max-height: 90px; outline: none;
+  }
+  .chat-send{ background: var(--ink); color: var(--paper); border: none; padding: 0 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .chat-send:disabled{ opacity: 0.4; }
+
+  footer{ padding: 20px clamp(18px, 4vw, 48px); border-top: 1px solid var(--line-soft); font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-faint); }
+
+  @media (prefers-reduced-motion: reduce){
+    .card, .card-photo{ transition: none; }
+    .typing span{ animation: none; opacity: 0.6; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">Stridewell</div>
+  <div class="powered-by">Agent-transactable storefront · <b>Powered by AgentCheckout</b></div>
+</header>
+
+<section class="hero">
+  <div class="hero-bg" style="background-image:url('https://images.pexels.com/photos/9207813/pexels-photo-9207813.jpeg?auto=compress&cs=tinysrgb&w=1400')"></div>
+  <div class="hero-scrim"></div>
+  <div class="hero-content">
+    <p class="eyebrow">Running, fitted right</p>
+    <h1>Shoes chosen for how you actually run.</h1>
+    <p class="hero-sub">18 styles, real-time stock, zero guesswork. Ask our assistant about arch support, budget, or terrain — or browse below. Every purchase, human or AI, passes through the same guarded checkout.</p>
+  </div>
+</section>
+
+<div class="filter-bar">
+  <span class="filter-label">Arch</span>
+  <button class="chip active" data-filter="arch" data-value="">All</button>
+  <button class="chip" data-filter="arch" data-value="flat">Flat</button>
+  <button class="chip" data-filter="arch" data-value="neutral">Neutral</button>
+  <button class="chip" data-filter="arch" data-value="high">High</button>
+  <span class="filter-label" style="margin-left:10px">Use</span>
+  <button class="chip active" data-filter="use" data-value="">All</button>
+  <button class="chip" data-filter="use" data-value="daily">Daily</button>
+  <button class="chip" data-filter="use" data-value="racing">Racing</button>
+  <button class="chip" data-filter="use" data-value="trail">Trail</button>
+  <button class="chip" data-filter="use" data-value="half-marathon">Half-marathon</button>
+  <button class="chip" data-filter="use" data-value="marathon">Marathon</button>
+  <div class="filter-spacer"></div>
+  <span id="result-count"></span>
+  <select id="sort">
+    <option value="price-asc">Price: low to high</option>
+    <option value="price-desc">Price: high to low</option>
+  </select>
+</div>
+
+<div class="grid-wrap">
+  <div class="grid" id="grid"></div>
+</div>
+
+<footer>Stridewell — demo storefront for the AgentCheckout project. Product photography: free-licensed stock images (Pexels), used as visual stand-ins for a fictional catalog — not photos of the actual named products. All inventory and pricing are for demonstration only.</footer>
+
+<div class="lightbox-backdrop" id="lightbox-backdrop">
+  <div class="lightbox" id="lightbox"></div>
+</div>
+
+<button id="chat-launcher"><span class="dot"></span>Ask Stridewell</button>
+<div id="chat-panel">
+  <div class="chat-head">
+    <div><div class="title">Stridewell Assistant</div><div class="sub mono">guarded checkout · live stock</div></div>
+    <div class="chat-head-actions">
+      <a href="/chat" target="_blank" rel="noopener">Full agent console &#8599;</a>
+      <button class="chat-close" id="chat-close">&times;</button>
+    </div>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-empty">Ask about a shoe, or click any product to chat about it directly.</div>
+  </div>
+  <div class="chat-input-row">
+    <textarea id="chat-input" rows="1" placeholder="Ask about fit, budget, or stock..."></textarea>
+    <button class="chat-send" id="chat-send">Send</button>
+  </div>
+</div>
+
+<script>
+let CATALOG = [];
+let activeFilters = { arch: '', use: '' };
+
+// Free-licensed stock photography (Pexels), used as visual stand-ins for
+// this fictional catalog — verified individually, none show clearly
+// identifiable third-party shoe-brand logos except where noted as
+// acceptable for a non-commercial demo.
+const PHOTOS = [
+  'https://images.pexels.com/photos/260044/pexels-photo-260044.jpeg',
+  'https://images.pexels.com/photos/8454904/pexels-photo-8454904.jpeg',
+  'https://images.pexels.com/photos/15659357/pexels-photo-15659357.jpeg',
+  'https://images.pexels.com/photos/7880182/pexels-photo-7880182.jpeg',
+  'https://images.pexels.com/photos/1456733/pexels-photo-1456733.jpeg',
+  'https://images.pexels.com/photos/5319372/pexels-photo-5319372.jpeg',
+  'https://images.pexels.com/photos/8497536/pexels-photo-8497536.jpeg',
+  'https://images.pexels.com/photos/3763869/pexels-photo-3763869.jpeg',
+  'https://images.pexels.com/photos/8456074/pexels-photo-8456074.jpeg',
+  'https://images.pexels.com/photos/9207813/pexels-photo-9207813.jpeg',
+  'https://images.pexels.com/photos/8381746/pexels-photo-8381746.jpeg',
+];
+const SKU_PHOTO = {
+  'SKU-101': PHOTOS[0], 'SKU-102': PHOTOS[1], 'SKU-103': PHOTOS[2], 'SKU-104': PHOTOS[3],
+  'SKU-105': PHOTOS[9], 'SKU-106': PHOTOS[4], 'SKU-107': PHOTOS[5], 'SKU-108': PHOTOS[6],
+  'SKU-109': PHOTOS[7], 'SKU-110': PHOTOS[8], 'SKU-111': PHOTOS[10], 'SKU-112': PHOTOS[0],
+  'SKU-113': PHOTOS[1], 'SKU-114': PHOTOS[9], 'SKU-115': PHOTOS[2], 'SKU-116': PHOTOS[3],
+  'SKU-117': PHOTOS[5], 'SKU-118': PHOTOS[6],
+};
+function photoFor(id, w){ return (SKU_PHOTO[id] || PHOTOS[0]) + `?auto=compress&cs=tinysrgb&w=${w}`; }
+
+function getSessionId(){
+  let id = sessionStorage.getItem('agentcheckout_session');
+  if(!id){ id = 'store-' + Math.random().toString(36).slice(2, 10); sessionStorage.setItem('agentcheckout_session', id); }
+  return id;
+}
+const sessionId = getSessionId();
+
+const ARCH_COLOR = { flat: 'var(--trusted)', high: 'var(--boundary)', neutral: 'var(--untrusted)' };
+
+function stockNote(stock){
+  if(stock <= 0) return `<span class="stock-note out">Sold out</span>`;
+  if(stock <= 3) return `<span class="stock-note low">Only ${stock} left</span>`;
+  return `<span class="stock-note">${stock} in stock</span>`;
+}
+
+function cardHTML(p){
+  const soldOut = p.stock <= 0;
+  const archColor = ARCH_COLOR[p.attributes.arch_support] || 'var(--ink-soft)';
+  return `
+    <div class="card ${soldOut ? 'sold-out' : ''}" data-id="${p.id}">
+      <div class="card-art">
+        <img class="card-photo" src="${photoFor(p.id, 500)}" alt="${p.name}" loading="lazy">
+        <div class="art-scrim"></div>
+        <span class="arch-badge" style="background:${archColor}">${p.attributes.arch_support} arch</span>
+        ${soldOut ? '<span class="badge">Sold out</span>' : ''}
+        <span class="expand-hint mono">click to enlarge</span>
+      </div>
+      <div class="card-body">
+        <p class="card-name">${p.name}</p>
+        <div class="card-tags">
+          <span class="tag">${p.attributes.use_case}</span>
+          <span class="tag">${p.attributes.width}</span>
+          <span class="tag">${p.attributes.terrain}</span>
+        </div>
+        <div class="card-row"><span class="price mono">Rs.${p.price}</span>${stockNote(p.stock)}</div>
+        <button class="btn-cta" data-id="${p.id}">${soldOut ? 'Ask for an alternative' : 'Ask & add to cart'}</button>
+      </div>
+    </div>`;
+}
+
+function applyFiltersAndRender(){
+  let items = CATALOG.filter(p =>
+    (!activeFilters.arch || p.attributes.arch_support === activeFilters.arch) &&
+    (!activeFilters.use || p.attributes.use_case === activeFilters.use)
+  );
+  const sort = document.getElementById('sort').value;
+  items.sort((a, b) => sort === 'price-desc' ? b.price - a.price : a.price - b.price);
+
+  document.getElementById('result-count').textContent = `${items.length} shown`;
+  const grid = document.getElementById('grid');
+  grid.innerHTML = items.map(cardHTML).join('');
+  attachCardInteractions();
+}
+
+function attachCardInteractions(){
+  document.querySelectorAll('.card').forEach(card => {
+    const photo = card.querySelector('.card-photo');
+    const body = card.querySelector('.card-body');
+
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = `perspective(1100px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg) scale(1.03)`;
+      photo.style.transform = `translateZ(20px) scale(1.12) translate(${-x * 10}px, ${-y * 10}px)`;
+      body.style.transform = `translateZ(15px) translate(${-x * 4}px, ${-y * 4}px)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+      photo.style.transform = 'translateZ(20px)';
+      body.style.transform = 'translateZ(15px)';
+    });
+
+    card.querySelector('.card-art').addEventListener('click', () => openLightbox(card.dataset.id));
+    card.querySelector('.card-name').addEventListener('click', () => openLightbox(card.dataset.id));
+    card.querySelector('.btn-cta').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const p = CATALOG.find(x => x.id === card.dataset.id);
+      askAbout(p);
+    });
+  });
+}
+
+function openLightbox(id){
+  const p = CATALOG.find(x => x.id === id);
+  if(!p) return;
+  const soldOut = p.stock <= 0;
+  document.getElementById('lightbox').innerHTML = `
+    <div class="lightbox-art">
+      <button class="lightbox-close" id="lightbox-close-btn">&times;</button>
+      <img id="lightbox-img" src="${photoFor(p.id, 900)}" alt="${p.name}">
+    </div>
+    <div class="lightbox-body">
+      <h3>${p.name}</h3>
+      <div class="price mono">Rs.${p.price}</div>
+      <div class="card-tags">
+        <span class="tag">${p.attributes.arch_support} arch</span>
+        <span class="tag">${p.attributes.use_case}</span>
+        <span class="tag">${p.attributes.width}</span>
+        <span class="tag">${p.attributes.terrain}</span>
+        <span class="tag">${p.attributes.cushioning} cushioning</span>
+      </div>
+      ${stockNote(p.stock)}
+      <button class="btn-cta" style="margin-top:16px" id="lightbox-cta">${soldOut ? 'Ask for an alternative' : 'Ask & add to cart'}</button>
+      <p class="photo-credit">Stand-in product photography, free-licensed stock (Pexels) — not the actual named product.</p>
+    </div>`;
+  document.getElementById('lightbox-backdrop').classList.add('open');
+  document.getElementById('lightbox-close-btn').addEventListener('click', closeLightbox);
+  document.getElementById('lightbox-cta').addEventListener('click', () => { closeLightbox(); askAbout(p); });
+
+  const art = document.querySelector('.lightbox-art');
+  const img = document.getElementById('lightbox-img');
+  art.addEventListener('mousemove', (e) => {
+    const rect = art.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    img.style.transform = `scale(1.14) translate(${-x * 18}px, ${-y * 18}px)`;
+  });
+  art.addEventListener('mouseleave', () => { img.style.transform = ''; });
+}
+function closeLightbox(){ document.getElementById('lightbox-backdrop').classList.remove('open'); }
+document.getElementById('lightbox-backdrop').addEventListener('click', (e) => { if(e.target.id === 'lightbox-backdrop') closeLightbox(); });
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeLightbox(); });
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const group = chip.dataset.filter;
+    document.querySelectorAll(`.chip[data-filter="${group}"]`).forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeFilters[group] = chip.dataset.value;
+    applyFiltersAndRender();
+  });
+});
+document.getElementById('sort').addEventListener('change', applyFiltersAndRender);
+
+/* ---- chat widget ---- */
+const launcher = document.getElementById('chat-launcher');
+const panel = document.getElementById('chat-panel');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const chatSend = document.getElementById('chat-send');
+
+function openChat(){ panel.classList.add('open'); launcher.style.display = 'none'; chatInput.focus(); }
+launcher.addEventListener('click', openChat);
+document.getElementById('chat-close').addEventListener('click', () => { panel.classList.remove('open'); launcher.style.display = 'flex'; });
+
+function renderMarkdown(text){
+  if(!text) return '';
+  const escape = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const lines = text.split('\n'); let html = ''; let i = 0; let para = [];
+  const flush = () => { if(para.length){ html += '<p>' + para.join('<br>') + '</p>'; para = []; } };
+  while(i < lines.length){
+    const line = lines[i];
+    if(/^\s*\|.*\|\s*$/.test(line) && i+1 < lines.length && /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i+1])){
+      flush();
+      const head = line.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+      html += '<table><thead><tr>' + head.map(c=>`<th>${inline(escape(c))}</th>`).join('') + '</tr></thead><tbody>';
+      i += 2;
+      while(i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])){
+        const cells = lines[i].trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+        html += '<tr>' + cells.map(c=>`<td>${inline(escape(c))}</td>`).join('') + '</tr>';
+        i++;
+      }
+      html += '</tbody></table>'; continue;
+    }
+    if(line.trim() === ''){ flush(); i++; continue; }
+    para.push(inline(escape(line))); i++;
+  }
+  flush();
+  return html;
+  function inline(s){ return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); }
+}
+
+function addChatMsg(role, text){
+  const empty = chatMessages.querySelector('.chat-empty');
+  if(empty) empty.remove();
+  const wrap = document.createElement('div');
+  wrap.className = 'cmsg ' + role;
+  const label = role === 'user' ? 'You' : role === 'agent' ? 'Agent' : 'System';
+  wrap.innerHTML = `<span class="role">${label}</span><div class="bubble">${renderMarkdown(text)}</div>`;
+  chatMessages.appendChild(wrap);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function addTyping(){
+  const wrap = document.createElement('div');
+  wrap.className = 'cmsg agent'; wrap.id = 'store-typing';
+  wrap.innerHTML = `<span class="role">Agent</span><div class="bubble"><span class="typing"><span></span><span></span><span></span></span></div>`;
+  chatMessages.appendChild(wrap); chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function removeTyping(){ const el = document.getElementById('store-typing'); if(el) el.remove(); }
+
+async function sendChat(text){
+  if(!text.trim()) return;
+  addChatMsg('user', text);
+  chatSend.disabled = true;
+  addTyping();
+  try{
+    const res = await fetch('/api/chat', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({message: text, session_id: sessionId}) });
+    const data = await res.json();
+    removeTyping();
+    addChatMsg(data.error ? 'system' : 'agent', data.reply);
+    maybeShowPaymentCard(data.events);
+  }catch(err){
+    removeTyping();
+    addChatMsg('system', 'Could not reach the server: ' + err);
+  }finally{
+    chatSend.disabled = false;
+  }
+}
+
+/* ---- real Razorpay checkout, triggered after the agent creates an order ---- */
+let RZP_CONFIG = null;
+async function getRazorpayConfig(){
+  if(RZP_CONFIG) return RZP_CONFIG;
+  RZP_CONFIG = await fetch('/api/razorpay-config').then(r => r.json());
+  return RZP_CONFIG;
+}
+
+function maybeShowPaymentCard(events){
+  if(!events) return;
+  const orderEvent = events.find(e => e.tool === 'create_order' && e.verdict_json && e.verdict_json.allowed);
+  if(!orderEvent) return;
+  let outcome;
+  try{ outcome = JSON.parse(orderEvent.outcome_json); }catch(e){ return; }
+  if(!outcome.ok || !outcome.order) return;
+  renderPaymentCard(outcome.order);
+}
+
+async function renderPaymentCard(order){
+  const cfg = await getRazorpayConfig();
+  const empty = chatMessages.querySelector('.chat-empty');
+  if(empty) empty.remove();
+
+  const wrap = document.createElement('div');
+  wrap.className = 'cmsg agent';
+  wrap.innerHTML = `<span class="role">Payment</span>
+    <div class="payment-card" id="pcard-${order.id}">
+      <span class="pc-mode ${cfg.mode}">${cfg.mode === 'live' ? 'Razorpay test mode' : 'Simulated — no live credentials'}</span>
+      <div class="pc-head"><span class="pc-order mono">${order.id}</span><span class="pc-amount">Rs.${order.total}</span></div>
+      <button class="pc-pay-btn" id="pay-${order.id}">${cfg.mode === 'live' ? 'Pay with Razorpay' : 'Simulate payment'}</button>
+    </div>`;
+  chatMessages.appendChild(wrap);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  document.getElementById(`pay-${order.id}`).addEventListener('click', () => startPayment(order, cfg));
+}
+
+function startPayment(order, cfg){
+  const btn = document.getElementById(`pay-${order.id}`);
+  const card = document.getElementById(`pcard-${order.id}`);
+
+  if(cfg.mode !== 'live'){
+    // No real credentials configured — fall back to the agent-driven mock capture.
+    btn.disabled = true;
+    btn.textContent = 'Simulating...';
+    sendChat(`Capture payment for order ${order.id}.`);
+    return;
+  }
+
+  const rzp = new Razorpay({
+    key: cfg.key_id,
+    amount: order.total * 100,
+    currency: 'INR',
+    order_id: order.razorpay_order_id,
+    name: 'Stridewell',
+    description: order.id,
+    theme: { color: '#161b22' },
+    handler: async function(response){
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+      try{
+        const res = await fetch('/api/verify-payment', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            order_id: order.id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          }),
+        });
+        const data = await res.json();
+        const status = document.createElement('div');
+        if(data.ok){
+          status.className = 'pc-status paid';
+          status.textContent = `Paid — ${data.payment.razorpay_payment_id}`;
+          btn.style.display = 'none';
+        }else{
+          status.className = 'pc-status failed';
+          status.textContent = `Verification failed: ${data.reason}`;
+          btn.disabled = false;
+          btn.textContent = 'Try again';
+        }
+        card.appendChild(status);
+      }catch(err){
+        btn.disabled = false;
+        btn.textContent = 'Try again';
+      }
+    },
+    modal: {
+      ondismiss: function(){ btn.disabled = false; btn.textContent = 'Pay with Razorpay'; },
+    },
+  });
+  rzp.open();
+}
+
+function askAbout(p){
+  openChat();
+  const msg = p.stock > 0
+    ? `Tell me about the ${p.name} and add one to my cart.`
+    : `The ${p.name} is sold out — what's a similar in-stock alternative?`;
+  sendChat(msg);
+}
+
+chatSend.addEventListener('click', () => { const t = chatInput.value; chatInput.value = ''; sendChat(t); });
+chatInput.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); const t = chatInput.value; chatInput.value = ''; sendChat(t); } });
+
+/* ---- load catalog ---- */
+fetch('/api/catalog').then(r => r.json()).then(data => { CATALOG = data; applyFiltersAndRender(); });
+</script>
+</body>
+</html>
