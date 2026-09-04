@@ -9,7 +9,7 @@ the "delete the agent layer, the rest still works as an API" test
 
 import json
 
-from domain.cart import add_item, apply_discount_raw, get_cart
+from domain.cart import add_item, apply_discount_raw, clear_cart, get_cart, remove_item
 from domain.catalog import search
 from domain.orders import capture_payment_raw, create_order_raw, get_order
 from guardrails.rules import check_capture_eligibility, check_discount, check_order_value, check_stock
@@ -19,8 +19,10 @@ from tools.definitions import (
     APPLY_DISCOUNT,
     ASK_CLARIFICATION,
     CAPTURE_PAYMENT,
+    CLEAR_CART,
     CREATE_ORDER,
     ESCALATE_TO_HUMAN,
+    REMOVE_FROM_CART,
     SEARCH_CATALOG,
 )
 from tools.schemas import validate_args
@@ -61,6 +63,14 @@ REGISTRY = {
     "add_to_cart": {
         "schema": ADD_TO_CART, "guardrail": _guard_add_to_cart,
         "fn": lambda args, cart_id: add_item(cart_id=cart_id, **args), "terminal": False,
+    },
+    "remove_from_cart": {
+        "schema": REMOVE_FROM_CART, "guardrail": None,
+        "fn": lambda args, cart_id: remove_item(cart_id=cart_id, **args), "terminal": False,
+    },
+    "clear_cart": {
+        "schema": CLEAR_CART, "guardrail": None,
+        "fn": lambda args, cart_id: clear_cart(cart_id), "terminal": False,
     },
     "apply_discount": {
         "schema": APPLY_DISCOUNT, "guardrail": _guard_apply_discount,

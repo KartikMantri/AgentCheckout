@@ -25,6 +25,14 @@ class ApplyDiscountArgs(BaseModel):
     pct: float = Field(gt=0, le=100)
 
 
+class RemoveFromCartArgs(BaseModel):
+    product_id: str
+
+
+class ClearCartArgs(BaseModel):
+    pass
+
+
 class CreateOrderArgs(BaseModel):
     pass
 
@@ -46,6 +54,8 @@ class EscalateToHumanArgs(BaseModel):
 SCHEMAS = {
     "search_catalog": SearchCatalogArgs,
     "add_to_cart": AddToCartArgs,
+    "remove_from_cart": RemoveFromCartArgs,
+    "clear_cart": ClearCartArgs,
     "apply_discount": ApplyDiscountArgs,
     "create_order": CreateOrderArgs,
     "capture_payment": CapturePaymentArgs,

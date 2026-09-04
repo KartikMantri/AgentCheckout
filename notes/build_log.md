@@ -285,3 +285,27 @@ repeating this), or (b) get a second Gemini API key on a different
 Google account/project. Either way, **do not claim M7/M8 numbers in
 the final submission until this batch has actually completed clean**
 — the first run's numbers were a real outage, not a measurement.
+
+## Post-submission — no way to remove a cart item, found via real use
+
+Live use of the web console surfaced a real gap: 7 tools covered
+adding to cart, but nothing let a customer undo it. Asked to "remove
+the first two items," the agent correctly didn't hallucinate a fake
+removal — it had no tool for it — but the conversation spiralled into
+confused clarification loops trying to work around the gap (offering
+"clear the cart and re-add" as a manual workaround), which read as the
+agent being stuck rather than honest about a missing capability.
+
+Added two tools: `remove_from_cart` (product_id) and `clear_cart`
+(no args) — both agent-callable, no guardrail needed (removing items
+isn't a business-limit concern), both tested live and confirmed
+against actual database state, not just the model's claim. Now 9
+tools, not 7 — the PRD's "7, not 15" restraint was about token cost
+per schema, not a hard ceiling; a genuinely missing capability is a
+real product gap, not scope creep to fix.
+
+**Worth remembering for the demo**: this was found through actual
+conversational use, not a scripted test — a good argument for doing a
+real, unscripted rehearsal pass before recording, since scripted
+scenarios (tests/scenarios.py) will never surface a gap like "there's
+no tool for the thing I just tried to ask for."

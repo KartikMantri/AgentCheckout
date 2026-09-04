@@ -35,15 +35,17 @@ E-commerce infrastructure is built for one buyer type: a human clicking through 
 
 Both entry points converge on the identical tool → guardrail → domain path. Proven directly (Step 12): the same `apply_discount(pct=40)` guardrail rejection fires identically whether the caller is the internal loop or an external MCP client that has never seen this codebase — no guardrail logic was written twice.
 
-## Tools (7)
+## Tools (9)
 
 | Tool | Guardrails | Notes |
 |---|---|---|
 | `search_catalog` | — | Read-only, live stock only, bounded to 5 results by default |
 | `add_to_cart` | GR4 (stock) | Structured rejection if insufficient stock |
+| `remove_from_cart` | — | Added after live testing surfaced there was no way to undo an add — see notes/build_log.md |
+| `clear_cart` | — | Empties items and any applied discount |
 | `apply_discount` | GR1 (cap), GR3 (one per order) | Escalates above cap |
 | `create_order` | GR2 (order value) | Freezes the total permanently |
-| `capture_payment` | GR2, GR6 (confirmed order), idempotency | Mocked Razorpay test mode; verified no double-charge |
+| `capture_payment` | GR2, GR6 (confirmed order), idempotency | Real Razorpay test mode when credentials are set (falls back to mock); in live mode, correctly refuses to charge without a human-completed Checkout widget rather than crashing or faking it |
 | `ask_clarification` | — | Uncertainty as a callable action, not a hoped-for behavior |
 | `escalate_to_human` | — | Terminal — out-of-bounds requests land here, not in an argument |
 

@@ -57,6 +57,36 @@ ADD_TO_CART = {
     },
 }
 
+REMOVE_FROM_CART = {
+    "type": "function",
+    "function": {
+        "name": "remove_from_cart",
+        "description": "Remove a product entirely from the customer's cart, regardless of quantity.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "product_id": {
+                    "type": "string",
+                    "description": "The product's id to remove, e.g. SKU-101.",
+                },
+            },
+            "required": ["product_id"],
+        },
+    },
+}
+
+CLEAR_CART = {
+    "type": "function",
+    "function": {
+        "name": "clear_cart",
+        "description": "Empty the customer's entire cart, removing every item and any applied discount. Use when the customer wants to start over.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+        },
+    },
+}
+
 APPLY_DISCOUNT = {
     "type": "function",
     "function": {

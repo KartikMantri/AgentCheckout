@@ -89,6 +89,38 @@ def add_item(cart_id: str, product_id: str, qty: int) -> dict:
     return {"ok": True, "cart": get_cart(cart_id)}
 
 
+def remove_item(cart_id: str, product_id: str) -> dict:
+    """Removes the item entirely, regardless of qty. Structured result
+    either way — 'nothing to remove' is not an error, just a no-op."""
+    conn = connect()
+    existing = conn.execute(
+        "SELECT qty FROM cart_items WHERE cart_id = ? AND product_id = ?",
+        (cart_id, product_id),
+    ).fetchone()
+
+    if not existing:
+        conn.close()
+        return {"ok": False, "reason": "not_in_cart", "product_id": product_id, "cart": get_cart(cart_id)}
+
+    conn.execute(
+        "DELETE FROM cart_items WHERE cart_id = ? AND product_id = ?",
+        (cart_id, product_id),
+    )
+    conn.commit()
+    conn.close()
+
+    return {"ok": True, "cart": get_cart(cart_id)}
+
+
+def clear_cart(cart_id: str) -> dict:
+    conn = connect()
+    conn.execute("DELETE FROM cart_items WHERE cart_id = ?", (cart_id,))
+    conn.execute("DELETE FROM discounts WHERE cart_id = ?", (cart_id,))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "cart": get_cart(cart_id)}
+
+
 def get_cart(cart_id: str) -> dict:
     conn = connect()
     rows = conn.execute(
