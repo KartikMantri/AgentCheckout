@@ -440,3 +440,45 @@ distinct from agent/customer_direct — the audit trail now has all
 three tiers of who-did-what: agent (blocked), customer_direct
 (bypasses that don't need a guardrail), merchant_operator (the actual
 human review GR2's escalation always should have led to).
+
+## Post-submission — escalation still had a dead end, from a different door
+
+Live over MCP: Claude Desktop, told a cart was over cap, called
+`escalate_to_human` directly instead of `create_order` — a completely
+reasonable reading of that tool's own description ("hand this to a
+human"), and one this project cannot control, since MCP tool
+descriptions are the only prompt guidance an external LLM ever sees
+(`agent/prompts.py`'s system prompt only governs the internal loop).
+`escalate_to_human`'s handler, though, was a pure no-op — logged the
+reason and returned `{"ok": true, "action": "escalated"}`, never
+touched the cart, never created a `pending_approval` row. Confirmed via
+`audit_log.jsonl`: the call was logged correctly (actor=external_agent,
+the earlier MCP-logging fix worked), but no `PENDING-xxxx` order
+existed anywhere — because the only code path that ever created one
+lived inside `create_order`'s own rejection branch, and nothing forces
+an external agent to call `create_order` before giving up on it.
+
+**Why this is a different bug from the logging gap, not the same one
+again:** that fix made MCP calls visible in the audit trail; this gap
+meant one specific, entirely valid MCP call sequence produced no
+trackable order at all, visible or not — a real gap in coverage, not
+a visibility gap.
+
+**Fix:** moved the "am I over cap, freeze a record" check out of
+`create_order`'s rejection branch and into `_escalate_to_human()`
+itself (`tools/registry.py`) — it now checks the live cart directly
+and calls `create_pending_approval()` whenever the cart is non-empty
+and over `MAX_AUTO_ORDER_VALUE`, regardless of which tool path got
+there. This is the guardrails-in-code principle applied one level
+deeper: don't just avoid trusting the LLM's *words*, don't trust its
+*tool-call ordering* either — the trackable record has to exist
+because the code checked the cart, not because the caller happened to
+invoke things in the sequence the internal loop always does.
+
+Verified directly against the registry (bypassing MCP transport,
+same as `_call()` does): a fresh cart over cap, `escalate_to_human`
+called with no prior `create_order` attempt, returns a real
+`pending_order_id` and the row appears on `/api/admin/pending`
+immediately. `ask_clarification` was checked too — deliberately left
+alone, since it's genuinely stateless and never claims to hand
+anything to a human.

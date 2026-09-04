@@ -55,6 +55,21 @@ def _guard_capture_payment(args: dict, cart_id: str):
     return check_order_value(order["total"])
 
 
+def _escalate_to_human(args: dict, cart_id: str):
+    result = {"ok": True, "action": "escalated", **args}
+    # An external agent can reach this tool directly — "escalate this" in
+    # conversation maps to it more naturally than "call create_order and
+    # let it bounce" — so the trackable record can't depend on the caller
+    # having gone through create_order first. If the cart's over the cap
+    # right now, freeze it here too, same as create_order's own rejection
+    # path does.
+    cart = get_cart(cart_id)
+    if cart["items"] and not check_order_value(cart["total"]).allowed:
+        pending = create_pending_approval(cart_id)
+        result["pending_order_id"] = pending["id"]
+    return result
+
+
 REGISTRY = {
     "search_catalog": {
         "schema": SEARCH_CATALOG, "guardrail": None,
@@ -90,7 +105,7 @@ REGISTRY = {
     },
     "escalate_to_human": {
         "schema": ESCALATE_TO_HUMAN, "guardrail": None,
-        "fn": lambda args, cart_id: {"ok": True, "action": "escalated", **args}, "terminal": True,
+        "fn": _escalate_to_human, "terminal": True,
     },
 }
 
