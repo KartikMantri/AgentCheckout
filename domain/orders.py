@@ -101,14 +101,33 @@ def _finalize_payment(order: dict, result: dict) -> dict:
 
 def capture_payment_raw(order_id: str) -> dict:
     """Agent-callable path. Idempotent: a repeat call for an already-paid
-    order returns the original payment instead of charging again."""
+    order returns the original payment instead of charging again.
+
+    In live mode this deliberately does NOT charge anything — there is
+    no payment credential to charge. It's a real, structured rejection
+    telling the model a human needs to complete Razorpay's Checkout
+    widget once (surfaced in the web storefront), not a crash and not
+    a silent mock charge that would misrepresent what happened."""
     existing = get_payment(order_id)
     if existing is not None:
         return {"ok": True, "payment": existing, "idempotent_replay": True}
 
-    from domain.payments import GATEWAY
+    from domain.payments import GATEWAY, is_live
 
     order = get_order(order_id)
+    if order is None:
+        return {"ok": False, "reason": "order_not_found", "detail": {"order_id": order_id}}
+
+    if is_live():
+        return {
+            "ok": False,
+            "reason": "human_checkout_required",
+            "detail": "Real Razorpay credentials are configured — I can't charge a "
+                      "payment method that was never provided. The customer needs to "
+                      "complete the real Checkout widget once (available in the web "
+                      "storefront) before this order can be marked paid.",
+        }
+
     result = GATEWAY.capture(order_id, order["total"])
     return _finalize_payment(order, result)
 

@@ -60,6 +60,13 @@
   }
   .powered-by b{ color: var(--ink-soft); font-weight: 600; }
 
+  .demo-banner{
+    background: var(--boundary-soft); border-bottom: 1px solid var(--boundary);
+    padding: 7px clamp(18px, 4vw, 48px); text-align: center;
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.03em; color: var(--boundary);
+  }
+  .demo-banner b{ text-transform: uppercase; letter-spacing: 0.08em; }
+
   /* ---- hero ---- */
   .hero{
     position: relative; overflow: hidden; min-height: 340px; display: flex; align-items: center;
@@ -161,6 +168,14 @@
   .btn-cta:hover{ background: var(--boundary); }
   .card.sold-out .btn-cta{ background: var(--paper); color: var(--ink-soft); border: 1px solid var(--line); }
   .card.sold-out .btn-cta:hover{ border-color: var(--boundary); color: var(--boundary); background: var(--paper); }
+
+  .btn-buy-now{
+    width: 100%; background: none; color: var(--trusted); border: 1px solid var(--trusted);
+    font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 12.5px;
+    letter-spacing: 0.02em; padding: 9px; cursor: pointer; margin-top: 6px;
+  }
+  .btn-buy-now:hover{ background: var(--trusted); color: var(--paper-raised); }
+  .card.sold-out .btn-buy-now{ display: none; }
 
   /* ---- lightbox ---- */
   .lightbox-backdrop{
@@ -268,6 +283,8 @@
 </style>
 </head>
 <body>
+
+<div class="demo-banner"><b>Demo merchant site</b> — Stridewell is fictional, built for the Razorpay AI Buildathon (Track 01). Razorpay test mode only, no real payments.</div>
 
 <header>
   <div class="wordmark">Stridewell</div>
@@ -399,6 +416,7 @@ function cardHTML(p){
         </div>
         <div class="card-row"><span class="price mono">Rs.${p.price}</span>${stockNote(p.stock)}</div>
         <button class="btn-cta" data-id="${p.id}">${soldOut ? 'Ask for an alternative' : 'Ask & add to cart'}</button>
+        <button class="btn-buy-now" data-id="${p.id}">Buy now</button>
       </div>
     </div>`;
 }
@@ -443,6 +461,11 @@ function attachCardInteractions(){
       const p = CATALOG.find(x => x.id === card.dataset.id);
       askAbout(p);
     });
+    card.querySelector('.btn-buy-now').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const p = CATALOG.find(x => x.id === card.dataset.id);
+      buyNow(p);
+    });
   });
 }
 
@@ -467,11 +490,15 @@ function openLightbox(id){
       </div>
       ${stockNote(p.stock)}
       <button class="btn-cta" style="margin-top:16px" id="lightbox-cta">${soldOut ? 'Ask for an alternative' : 'Ask & add to cart'}</button>
+      ${soldOut ? '' : '<button class="btn-buy-now" id="lightbox-buy-now">Buy now</button>'}
       <p class="photo-credit">Stand-in product photography, free-licensed stock (Pexels) — not the actual named product.</p>
     </div>`;
   document.getElementById('lightbox-backdrop').classList.add('open');
   document.getElementById('lightbox-close-btn').addEventListener('click', closeLightbox);
   document.getElementById('lightbox-cta').addEventListener('click', () => { closeLightbox(); askAbout(p); });
+  if(!soldOut){
+    document.getElementById('lightbox-buy-now').addEventListener('click', () => { closeLightbox(); buyNow(p); });
+  }
 
   const art = document.querySelector('.lightbox-art');
   const img = document.getElementById('lightbox-img');
@@ -673,6 +700,16 @@ function askAbout(p){
     ? `Tell me about the ${p.name} and add one to my cart.`
     : `The ${p.name} is sold out — what's a similar in-stock alternative?`;
   sendChat(msg);
+}
+
+function buyNow(p){
+  // Same guarded pipeline as everything else on this page — this is not
+  // a shortcut around add_to_cart/create_order, it's the identical chat
+  // flow triggered without making the customer type it. The payment
+  // card appears automatically via maybeShowPaymentCard() inside
+  // sendChat(), same as the "Ask & add to cart" path.
+  openChat();
+  sendChat(`Add one ${p.name} to my cart and create the order.`);
 }
 
 chatSend.addEventListener('click', () => { const t = chatInput.value; chatInput.value = ''; sendChat(t); });
