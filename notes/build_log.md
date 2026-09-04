@@ -341,3 +341,45 @@ cap and offering either 10% now or human escalation for more — no
 Also added a bold promo callout to the storefront hero ("Flat 10% off
 ... just ask") so the number is visible before the conversation even
 starts, not something the customer has to extract from the agent.
+
+## Post-submission — order-value cap was blocking humans, not just AI
+
+A large cart (₹11,098, over the ₹5,000 cap) hit "escalate to a human"
+even when the person looking at their own cart, on their own screen,
+clicked Checkout themselves — not something an AI decided on its own.
+Fair pushback: why would a human confirming their own purchase need
+approval from *another* human?
+
+The real answer: GR2 exists to stop an AI from autonomously
+committing to a large spend it decided on its own mid-conversation.
+It was never meant to gate a human's own explicit, informed decision
+— but the code didn't distinguish the two callers, so both hit the
+identical check.
+
+**Fix:** a second, separate path — `/api/cart/{id}/confirm-checkout`
+in web/app.py — reachable ONLY by a direct UI button click after the
+storefront shows the human the real total and a real confirmation
+screen. It calls `create_order_raw()` directly, bypassing the
+guardrail-wrapped `tools.registry.dispatch()` entirely. The
+chat/MCP/Claude-Desktop path is completely unchanged — an AI still
+cannot talk its way past GR2 no matter how the request is phrased;
+verified live, side by side, in the same session: the agent still
+correctly refused the same ₹11,098 cart, and the direct endpoint
+created a real Razorpay order for it seconds later.
+
+**Why this isn't a guardrail bypass, and the line that matters:** the
+new path is unreachable from any LLM output — no prompt, no tool
+schema, no natural-language phrasing leads to it. It only exists
+behind a literal browser click on a button that shows the real number.
+That click already IS the human-in-the-loop GR2 was trying to
+guarantee — recognizing that isn't weakening the guardrail, it's
+applying it to the actual thing it was meant to catch. Payment capture
+is unaffected either way: creating an order never moves money: real
+credentials still have to go through the Razorpay widget regardless
+of which path created the order.
+
+Audit trail records both, honestly, in the same session:
+`agent / create_order / order_value_exceeds_cap` (blocked) immediately
+followed by `customer_direct / create_order / human_confirmed_direct_checkout`
+(allowed) — the two-tier trust model made visible in the evidence
+itself, not just asserted in the architecture doc.

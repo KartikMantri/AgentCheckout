@@ -860,10 +860,54 @@ async function renderCartDrawer(){
   });
 
   const checkoutBtn = document.getElementById('cd-checkout');
-  if(checkoutBtn) checkoutBtn.addEventListener('click', () => {
-    closeCartDrawer();
+  if(checkoutBtn) checkoutBtn.addEventListener('click', async () => {
+    const limits = await getLimits();
+    if(cart.total > limits.max_auto_order_value){
+      closeCartDrawer();
+      showConfirmCheckoutModal(cart, limits);
+    } else {
+      closeCartDrawer();
+      openChat();
+      sendChat('Create the order for everything currently in my cart.');
+    }
+  });
+}
+
+let LIMITS_CACHE = null;
+async function getLimits(){
+  if(!LIMITS_CACHE) LIMITS_CACHE = await fetch('/api/limits').then(r => r.json());
+  return LIMITS_CACHE;
+}
+
+function showConfirmCheckoutModal(cart, limits){
+  document.getElementById('lightbox').innerHTML = `
+    <div class="lightbox-body" style="grid-column: 1 / -1; max-width: 480px; margin: 0 auto;">
+      <h3>Confirm this order</h3>
+      <p style="color:var(--ink-soft); font-size:13.5px; line-height:1.65; margin:10px 0 18px;">
+        Your total is <strong style="color:var(--ink)">Rs.${cart.total}</strong> — above the
+        Rs.${limits.max_auto_order_value} our AI assistant can approve on its own. That cap exists to stop an
+        <em>AI</em> from committing to a large order without a human confirming it. You're a human, looking at the
+        real total, right now — so we can go ahead directly.
+      </p>
+      <button class="btn-cta" id="confirm-checkout-btn">Confirm &amp; place order</button>
+      <button class="cd-clear-btn" id="cancel-checkout-btn" style="margin-top:8px;">Cancel</button>
+    </div>`;
+  document.getElementById('lightbox-backdrop').classList.add('open');
+  document.getElementById('cancel-checkout-btn').addEventListener('click', closeLightbox);
+  document.getElementById('confirm-checkout-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('confirm-checkout-btn');
+    btn.disabled = true;
+    btn.textContent = 'Placing order...';
+    const result = await fetch(`/api/cart/${sessionId}/confirm-checkout`, { method: 'POST' }).then(r => r.json());
+    closeLightbox();
     openChat();
-    sendChat('Create the order for everything currently in my cart.');
+    if(result.ok){
+      addChatMsg('system', `Order ${result.order.id} placed directly — Rs.${result.order.total}. Complete payment below.`);
+      renderPaymentCard(result.order);
+      updateCartBadge({items: []});
+    }else{
+      addChatMsg('system', `Could not place the order: ${result.reason}`);
+    }
   });
 }
 

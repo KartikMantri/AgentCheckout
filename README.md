@@ -63,6 +63,8 @@ All limits live in `config.py`. All enforcement logic lives in `guardrails/rules
 | GR7 | Max agent loop iterations | 8 | — |
 | GR8 | Max tool-call retries on malformed args | 2 | Recovered a real malformed call (`qty: "one"`) in 3 turns |
 
+**A guardrail catches an unsupervised AI, not a supervised human — and the code now actually knows the difference.** GR2 blocks `create_order` when the *agent* (chat, MCP, Claude Desktop) decides on a large order — proven, still fully enforced. But a human looking at their own real cart total in the storefront and clicking a real "Confirm & place order" button *is* the human-in-the-loop GR2 exists to guarantee, so `web/app.py`'s `/api/cart/{id}/confirm-checkout` calls order creation directly, bypassing the guardrail-wrapped path entirely — reachable only by that literal button click, never by anything an LLM can output. Verified side by side in one session: the agent still refused an ₹11,098 cart exactly as before; the same cart, confirmed directly by a human, created a real order seconds later. Payment is unaffected either way — creating an order never moves money, and capture still requires the real Razorpay widget regardless of which path created it.
+
 ## Providers
 
 Two, not three. Cerebras was dropped after its free-tier account required billing verification we don't have (a real, documented instance of the exact risk §1.12/§5.4 warn about — free-tier catalogs are gated or pruned without notice).

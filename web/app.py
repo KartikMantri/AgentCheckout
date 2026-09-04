@@ -19,6 +19,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+import config
 from agent.loop import run
 from agent.session import get_session, reset_session
 from audit.logger import log_event, read_all
@@ -26,7 +27,7 @@ from domain.cart import clear_cart as clear_cart_raw
 from domain.cart import get_cart, init_cart_tables
 from domain.cart import remove_item as remove_item_raw
 from domain.catalog import init_db, list_all
-from domain.orders import get_order, init_order_tables, verify_and_capture_payment
+from domain.orders import create_order_raw, get_order, init_order_tables, verify_and_capture_payment
 from domain.payments import is_live
 
 init_db()
@@ -123,6 +124,45 @@ def cart_clear(session_id: str):
         outcome_json=str(result), provider=None, model=None, is_failover=None, tokens=None, latency_ms=None,
     )
     return result["cart"]
+
+
+@app.get("/api/limits")
+def limits():
+    """Public-safe copy of the auto-approval numbers, so the storefront
+    UI can tell a human whether their own action needs the direct
+    confirm-checkout path or the normal (guardrail-checked) one."""
+    return {
+        "max_auto_order_value": config.MAX_AUTO_ORDER_VALUE,
+        "max_auto_discount_pct": config.MAX_AUTO_DISCOUNT_PCT,
+    }
+
+
+@app.post("/api/cart/{session_id}/confirm-checkout")
+def confirm_checkout(session_id: str):
+    """A SEPARATE path from the agent's create_order tool, reachable only
+    by a direct UI button click — never by anything an LLM can output,
+    no matter how a chat message is phrased. GR2 (the order-value cap)
+    exists to stop an AI from autonomously committing to a large spend
+    it decided on its own; it does not need to apply here, because a
+    human just looked at this exact total on their own screen and
+    clicked a real button — that click already IS the human-in-the-loop
+    the cap was trying to guarantee. The chat/MCP-driven create_order
+    tool is completely unchanged: an AI still can never talk its way
+    past GR2. Payment is a separate, still fully-enforced layer either
+    way — this only creates the order, it never moves money."""
+    session = get_session(session_id)
+    cart = get_cart(session["cart_id"])
+    if not cart["items"]:
+        return {"ok": False, "reason": "cart_empty"}
+
+    result = create_order_raw(session["cart_id"])
+    log_event(
+        session_id=session_id, actor="customer_direct", tool="create_order",
+        args_json="{}",
+        verdict_json={"allowed": True, "reason": "human_confirmed_direct_checkout", "escalation_required": False},
+        outcome_json=str(result), provider=None, model=None, is_failover=None, tokens=None, latency_ms=None,
+    )
+    return result
 
 
 @app.get("/api/razorpay-config")
