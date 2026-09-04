@@ -51,6 +51,14 @@ MAX_AUTO_DISCOUNT_PCT = 10
 MAX_DISCOUNTS_PER_ORDER = 1
 MAX_AUTO_ORDER_VALUE = 5000
 
+# Used to build a real, clickable payment link that any LLM interface
+# (MCP, Claude Desktop, chat) can hand back to the customer — none of
+# them can open a browser window themselves, but a real URL to the
+# real Razorpay Checkout is the safe equivalent. Set PUBLIC_BASE_URL
+# once this is deployed; defaults to localhost for local dev/demo.
+import os as _os
+PUBLIC_BASE_URL = _os.getenv("PUBLIC_BASE_URL", "http://127.0.0.1:8000")
+
 # History trimming — keep the most recent N conversational turns plus
 # the system prompt. Never trim mid-turn (see agent/history.py).
 MAX_HISTORY_TURNS = 6

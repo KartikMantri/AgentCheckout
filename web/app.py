@@ -39,6 +39,7 @@ app = FastAPI(title="AgentCheckout")
 WEB_DIR = os.path.dirname(os.path.abspath(__file__))
 STORE_PATH = os.path.join(WEB_DIR, "store.html")
 CHAT_PATH = os.path.join(WEB_DIR, "index.html")
+PAY_PATH = os.path.join(WEB_DIR, "pay.html")
 
 
 class ChatRequest(BaseModel):
@@ -49,6 +50,16 @@ class ChatRequest(BaseModel):
 @app.get("/")
 def storefront():
     return FileResponse(STORE_PATH)
+
+
+@app.get("/pay/{order_id}")
+def pay_page(order_id: str):
+    """Standalone payment page any interface can link to — chat, MCP,
+    Claude Desktop, anywhere an LLM can hand back a URL but can't open
+    a browser window itself. Same real Razorpay widget, same signature
+    verification as everywhere else; order_id in the URL just tells
+    the page which order to load via /api/order."""
+    return FileResponse(PAY_PATH)
 
 
 @app.get("/chat")

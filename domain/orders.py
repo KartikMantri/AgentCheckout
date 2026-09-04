@@ -119,13 +119,15 @@ def capture_payment_raw(order_id: str) -> dict:
         return {"ok": False, "reason": "order_not_found", "detail": {"order_id": order_id}}
 
     if is_live():
+        import config
         return {
             "ok": False,
             "reason": "human_checkout_required",
             "detail": "Real Razorpay credentials are configured — I can't charge a "
-                      "payment method that was never provided. The customer needs to "
-                      "complete the real Checkout widget once (available in the web "
-                      "storefront) before this order can be marked paid.",
+                      "payment method that was never provided. Share the payment_link "
+                      "below with the customer so they can complete the real Checkout "
+                      "widget themselves — that's the only way this order can become paid.",
+            "payment_link": f"{config.PUBLIC_BASE_URL}/pay/{order_id}",
         }
 
     result = GATEWAY.capture(order_id, order["total"])

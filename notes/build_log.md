@@ -383,3 +383,36 @@ Audit trail records both, honestly, in the same session:
 followed by `customer_direct / create_order / human_confirmed_direct_checkout`
 (allowed) — the two-tier trust model made visible in the evidence
 itself, not just asserted in the architecture doc.
+
+## Post-submission — MCP server never loaded .env, and a real payment-link feature
+
+Two things landed together. First, a request: let any LLM (chat, MCP,
+Claude Desktop) drive a purchase all the way to a real Razorpay
+payment, not just the storefront. Since no MCP tool can open a browser
+window itself, the right answer is a real, clickable payment link —
+`capture_payment_raw()` now returns `payment_link` pointing at a new
+standalone page (`web/pay.html`, served at `/pay/{order_id}`) with the
+real Razorpay Checkout widget, reachable from anywhere an LLM can hand
+back a URL. `config.PUBLIC_BASE_URL` makes the link correct once
+deployed, not just on localhost. System prompt updated to (a) confirm
+the order with the customer before calling create_order at all, and
+(b) share that exact link when payment needs a human.
+
+Testing it over MCP specifically surfaced a real, separate bug:
+`mcp_server/server.py` never called `load_dotenv()` — every other
+entrypoint in this project does. It had been silently running in mock
+mode the entire time over MCP, including through all the earlier MCP
+testing (Step 12, the Claude Desktop purchase, the GR2 side-by-side
+test) — none of that touched real credentials, so it never surfaced.
+Only showed up now because this was the first time something over MCP
+specifically depended on `domain.payments.is_live()` returning the
+right answer. Fixed with the same two-line `load_dotenv()` pattern
+every other file already uses. Re-verified: MCP now creates a real
+Razorpay order and returns a working payment_link, identical in shape
+to the chat path.
+
+**Worth remembering**: a bug like this — correct code, wrong
+environment — only shows up when you test the actual dependency it
+affects, not just "does the tool return successfully." Mock and live
+mode returning superficially similar-shaped success responses is
+exactly what let this hide for as long as it did.

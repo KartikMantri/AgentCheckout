@@ -21,6 +21,10 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from mcp.server.fastmcp import FastMCP
 
 from agent.session import get_session
