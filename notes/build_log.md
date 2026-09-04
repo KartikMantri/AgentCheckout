@@ -482,3 +482,34 @@ called with no prior `create_order` attempt, returns a real
 immediately. `ask_clarification` was checked too — deliberately left
 alone, since it's genuinely stateless and never claims to hand
 anything to a human.
+
+## Post-submission — approval had no way to reach the customer
+
+Once a merchant approves a pending order on `/admin`, nothing told the
+customer. The only state change was `orders.status` flipping in the
+database; the customer's only path to finding out was re-clicking a
+payment link they'd already been given earlier in the conversation,
+with zero prompt to do so — a real dead end for a live demo, since
+approving an order silently doesn't look any different from ignoring
+it.
+
+No email/SMS infra exists in this project and adding one is out of
+scope, so the fix is a 10th tool: `check_order_status` (`order_id`) —
+a plain read of the real order record, no guardrail needed since it
+can't change anything. `agent/prompts.py` now tells the model to call
+it whenever a customer asks for an update on an id it was previously
+given, and to report exactly what comes back: still pending, approved
+(with an honest "this demo doesn't send real emails, but you'd get one
+with the payment link shortly — here's the link now" framing, then the
+real `payment_link`), or rejected. Registered in `tools/schemas.py`,
+`tools/definitions.py`, `tools/registry.py`, and `mcp_server/server.py`
+identically to every other tool — same registry, same guardrail-free
+path, reachable from chat, MCP, or any other client.
+
+Verified end to end, no LLM cost: escalate an over-cap cart ->
+check_order_status returns `pending_approval` -> approve via
+`approve_pending_order()` -> check_order_status on the same id now
+returns `created` plus a working `payment_link`. The honesty
+requirement here matters more than the code: the system prompt is
+explicit that no real email gets sent in this demo, rather than
+implying one will arrive.

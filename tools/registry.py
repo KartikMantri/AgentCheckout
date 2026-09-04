@@ -9,6 +9,7 @@ the "delete the agent layer, the rest still works as an API" test
 
 import json
 
+import config
 from domain.cart import add_item, apply_discount_raw, clear_cart, get_cart, remove_item
 from domain.catalog import search
 from domain.orders import capture_payment_raw, create_order_raw, create_pending_approval, get_order
@@ -19,6 +20,7 @@ from tools.definitions import (
     APPLY_DISCOUNT,
     ASK_CLARIFICATION,
     CAPTURE_PAYMENT,
+    CHECK_ORDER_STATUS,
     CLEAR_CART,
     CREATE_ORDER,
     ESCALATE_TO_HUMAN,
@@ -53,6 +55,17 @@ def _guard_capture_payment(args: dict, cart_id: str):
         return eligibility
 
     return check_order_value(order["total"])
+
+
+def _check_order_status(args: dict, cart_id: str):
+    order = get_order(args["order_id"])
+    if order is None:
+        return {"ok": False, "reason": "order_not_found", "detail": {"order_id": args["order_id"]}}
+
+    result = {"ok": True, "order_id": order["id"], "status": order["status"], "total": order["total"]}
+    if order["status"] == "created":
+        result["payment_link"] = f"{config.PUBLIC_BASE_URL}/pay/{order['id']}"
+    return result
 
 
 def _escalate_to_human(args: dict, cart_id: str):
@@ -98,6 +111,10 @@ REGISTRY = {
     "capture_payment": {
         "schema": CAPTURE_PAYMENT, "guardrail": _guard_capture_payment,
         "fn": lambda args, cart_id: capture_payment_raw(args["order_id"]), "terminal": False,
+    },
+    "check_order_status": {
+        "schema": CHECK_ORDER_STATUS, "guardrail": None,
+        "fn": _check_order_status, "terminal": False,
     },
     "ask_clarification": {
         "schema": ASK_CLARIFICATION, "guardrail": None,

@@ -41,6 +41,10 @@ class CapturePaymentArgs(BaseModel):
     order_id: str
 
 
+class CheckOrderStatusArgs(BaseModel):
+    order_id: str
+
+
 class AskClarificationArgs(BaseModel):
     question: str
     options: list[str] | None = None
@@ -59,6 +63,7 @@ SCHEMAS = {
     "apply_discount": ApplyDiscountArgs,
     "create_order": CreateOrderArgs,
     "capture_payment": CapturePaymentArgs,
+    "check_order_status": CheckOrderStatusArgs,
     "ask_clarification": AskClarificationArgs,
     "escalate_to_human": EscalateToHumanArgs,
 }

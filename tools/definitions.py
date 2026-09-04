@@ -149,6 +149,21 @@ ASK_CLARIFICATION = {
     },
 }
 
+CHECK_ORDER_STATUS = {
+    "type": "function",
+    "function": {
+        "name": "check_order_status",
+        "description": "Check whether a pending or created order has been reviewed yet. Use this when the customer asks for an update on an order you previously gave them an id for (a create_order rejection's pending_order_id, or create_order's own order id).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "order_id": {"type": "string", "description": "The order id to check, e.g. PENDING-xxxx or ORDER-xxxx."},
+            },
+            "required": ["order_id"],
+        },
+    },
+}
+
 ESCALATE_TO_HUMAN = {
     "type": "function",
     "function": {

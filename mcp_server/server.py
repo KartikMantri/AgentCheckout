@@ -130,6 +130,12 @@ def capture_payment(order_id: str) -> str:
 
 
 @mcp.tool()
+def check_order_status(order_id: str) -> str:
+    """Check whether a pending or created order has been reviewed yet. Use when the customer asks for an update on an order id you previously gave them."""
+    return _call("check_order_status", {"order_id": order_id})
+
+
+@mcp.tool()
 def ask_clarification(question: str, options: list[str] | None = None) -> str:
     """Ask the customer a clarifying question instead of guessing."""
     return _call("ask_clarification", {"question": question, "options": options})
