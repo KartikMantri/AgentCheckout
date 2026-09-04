@@ -309,3 +309,35 @@ conversational use, not a scripted test — a good argument for doing a
 real, unscripted rehearsal pass before recording, since scripted
 scenarios (tests/scenarios.py) will never surface a gap like "there's
 no tool for the thing I just tried to ask for."
+
+## Post-submission — discount flow was ambiguous, and escalation too terse
+
+Live use surfaced two related UX problems around `apply_discount`,
+neither a guardrail bug — the enforcement was correct throughout:
+
+1. Asked to "apply a discount" with no percentage stated, the agent
+   asked the customer to name one, forcing them to guess at an unstated
+   limit rather than just offering the store's actual flat rate.
+2. When a request came in over the cap (15% vs the 10% max), the first
+   reply was just "I've escalated this to a human — reason: ..." with
+   no explanation of the cap or what to do next. The model recovered
+   well on a follow-up "what?", explaining clearly — but only on
+   request, not proactively.
+
+**Fix, in `agent/prompts.py` only — no guardrail or config change,
+because none was needed; the 10% cap already IS the store's promo
+rate:** the system prompt now tells the model the flat-10%-off framing
+(informational/marketing, not a limit statement — the actual cap still
+lives solely in `guardrails/rules.py` + `config.py` and doesn't care
+what the prompt says) and explicitly requires it to state the cap and
+offer a concrete alternative in the SAME message as any discount
+rejection, never a bare "escalated" with no explanation.
+
+Verified live: an unspecified "apply a discount" now auto-applies 10%
+directly; a 15% request now gets one clear message stating the 10%
+cap and offering either 10% now or human escalation for more — no
+"what?" follow-up needed.
+
+Also added a bold promo callout to the storefront hero ("Flat 10% off
+... just ask") so the number is visible before the conversation even
+starts, not something the customer has to extract from the agent.
