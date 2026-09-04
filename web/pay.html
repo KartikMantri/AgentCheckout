@@ -91,6 +91,20 @@ async function init(){
     return;
   }
 
+  if(order.status === 'pending_approval'){
+    card.innerHTML = `<p class="eyebrow">AgentCheckout · Secure payment</p><h1>${order.id}</h1>
+      <div class="row"><span>Total</span><span class="amount">Rs.${order.total}</span></div>
+      <p class="status info">This order is above the auto-approval limit and is waiting for a store associate to review it. You'll be able to pay here once it's approved.</p>`;
+    return;
+  }
+
+  if(order.status === 'rejected'){
+    card.innerHTML = `<p class="eyebrow">AgentCheckout · Secure payment</p><h1>${order.id}</h1>
+      <div class="row"><span>Total</span><span class="amount">Rs.${order.total}</span></div>
+      <p class="status failed">This order was reviewed and could not be approved.</p>`;
+    return;
+  }
+
   if(cfg.mode !== 'live'){
     card.innerHTML = `<p class="eyebrow">AgentCheckout · Secure payment</p><h1>${order.id}</h1>
       <div class="row"><span>Total</span><span class="amount">Rs.${order.total}</span></div>

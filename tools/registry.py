@@ -11,7 +11,7 @@ import json
 
 from domain.cart import add_item, apply_discount_raw, clear_cart, get_cart, remove_item
 from domain.catalog import search
-from domain.orders import capture_payment_raw, create_order_raw, get_order
+from domain.orders import capture_payment_raw, create_order_raw, create_pending_approval, get_order
 from guardrails.rules import check_capture_eligibility, check_discount, check_order_value, check_stock
 from guardrails.verdict import Verdict
 from tools.definitions import (
@@ -117,12 +117,19 @@ def dispatch(tool_name: str, raw_args_json: str, cart_id: str) -> dict:
     if entry["guardrail"] is not None:
         verdict = entry["guardrail"](parsed_args, cart_id)
         if not verdict.allowed:
-            return {
+            rejection = {
                 "ok": False,
                 "reason": verdict.reason,
                 "escalation_required": verdict.escalation_required,
                 "detail": verdict.detail,
             }
+            # The one rejection that gets a real, trackable record: a
+            # merchant operator can actually review and approve this one
+            # later (/admin) — everything else is just a rejection message.
+            if tool_name == "create_order" and verdict.reason == "order_value_exceeds_cap":
+                pending = create_pending_approval(cart_id)
+                rejection["pending_order_id"] = pending["id"]
+            return rejection
 
     return entry["fn"](parsed_args, cart_id)
 

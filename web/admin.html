@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merchant Review — AgentCheckout</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%93%90</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper: #eef1f4; --paper-raised: #ffffff; --ink: #161b22; --ink-soft: #56606f; --ink-faint: #9aa3b0;
+    --line: #b7c0cc; --line-soft: #d8dee5;
+    --trusted: #1c6363; --trusted-soft: rgba(28,99,99,0.09);
+    --boundary: #a23a2c; --boundary-soft: rgba(162,58,44,0.09);
+    --untrusted: #a06a20; --untrusted-soft: rgba(160,106,32,0.10);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper: #10141b; --paper-raised: #171d27; --ink: #e8ecf1; --ink-soft: #a9b2c1; --ink-faint: #566073;
+      --line: #2d3644; --line-soft: #232b37;
+      --trusted: #4bb0a6; --trusted-soft: rgba(75,176,166,0.13);
+      --boundary: #dd6a56; --boundary-soft: rgba(221,106,86,0.12);
+      --untrusted: #d9a352; --untrusted-soft: rgba(217,163,82,0.13);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper: #10141b; --paper-raised: #171d27; --ink: #e8ecf1; --ink-soft: #a9b2c1; --ink-faint: #566073;
+    --line: #2d3644; --line-soft: #232b37;
+    --trusted: #4bb0a6; --trusted-soft: rgba(75,176,166,0.13);
+    --boundary: #dd6a56; --boundary-soft: rgba(221,106,86,0.12);
+    --untrusted: #d9a352; --untrusted-soft: rgba(217,163,82,0.13);
+  }
+  *{ box-sizing: border-box; }
+  body{ margin: 0; background: var(--paper); color: var(--ink); font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .mono{ font-family: "IBM Plex Mono", monospace; }
+
+  header{ padding: 18px clamp(18px,4vw,40px); border-bottom: 1px solid var(--line-soft); background: var(--paper-raised); }
+  .wordmark{ font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 700; font-size: 19px; }
+  .eyebrow{ font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--boundary); margin: 0 0 3px; }
+  .no-auth-note{ font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--untrusted); margin-top: 6px; }
+
+  .wrap{ max-width: 760px; margin: 0 auto; padding: 30px clamp(18px,4vw,40px) 80px; }
+  .empty{ text-align: center; color: var(--ink-faint); font-size: 13.5px; padding: 60px 0; }
+
+  .card{ background: var(--paper-raised); border: 1px solid var(--line); margin-bottom: 16px; }
+  .card-head{ display: flex; justify-content: space-between; align-items: baseline; padding: 14px 18px; border-bottom: 1px solid var(--line-soft); }
+  .card-head .oid{ font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-faint); }
+  .card-head .total{ font-family: "IBM Plex Mono", monospace; font-size: 19px; font-variant-numeric: tabular-nums; }
+  .cap-note{ padding: 10px 18px; background: var(--boundary-soft); color: var(--boundary); font-family: "IBM Plex Mono", monospace; font-size: 11.5px; }
+  .items{ padding: 10px 18px; }
+  .item-row{ display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .item-row:last-child{ border-bottom: none; }
+  .item-row .amt{ font-family: "IBM Plex Mono", monospace; color: var(--ink-soft); }
+  .actions{ display: flex; gap: 10px; padding: 14px 18px; }
+  .btn{ flex: 1; padding: 10px; border: none; font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .btn-approve{ background: var(--trusted); color: #fff; }
+  .btn-approve:hover{ opacity: 0.85; }
+  .btn-reject{ background: none; border: 1px solid var(--line); color: var(--ink-soft); }
+  .btn-reject:hover{ border-color: var(--boundary); color: var(--boundary); }
+  .btn:disabled{ opacity: 0.5; cursor: default; }
+  .result-note{ padding: 12px 18px; font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+  .result-note.approved{ color: var(--trusted); }
+  .result-note.rejected{ color: var(--boundary); }
+</style>
+</head>
+<body>
+<header>
+  <p class="eyebrow">AgentCheckout &middot; Merchant review</p>
+  <div class="wordmark">Escalated orders</div>
+  <p class="no-auth-note">Demo only — no authentication on this page. A real deployment would restrict this to store staff.</p>
+</header>
+<div class="wrap" id="wrap">
+  <div class="empty">Loading…</div>
+</div>
+
+<script>
+async function load(){
+  const [pending, catalog] = await Promise.all([
+    fetch('/api/admin/pending').then(r => r.json()),
+    fetch('/api/catalog').then(r => r.json()),
+  ]);
+  const wrap = document.getElementById('wrap');
+
+  if(pending.length === 0){
+    wrap.innerHTML = '<div class="empty">No orders waiting for review right now.</div>';
+    return;
+  }
+
+  wrap.innerHTML = pending.map(order => {
+    const itemsHtml = order.items.map(item => {
+      const product = catalog.find(p => p.id === item.product_id);
+      const name = product ? product.name : item.product_id;
+      return `<div class="item-row"><span>${name} &times;${item.qty}</span><span class="amt">Rs.${item.line_total}</span></div>`;
+    }).join('');
+    return `
+      <div class="card" id="card-${order.id}">
+        <div class="card-head"><span class="oid">${order.id}</span><span class="total">Rs.${order.total}</span></div>
+        <div class="cap-note">Blocked automatically — above the store's auto-approval cap. Frozen at this total when it was escalated.</div>
+        <div class="items">${itemsHtml}</div>
+        <div class="actions">
+          <button class="btn btn-approve" data-id="${order.id}" data-action="approve">Approve</button>
+          <button class="btn btn-reject" data-id="${order.id}" data-action="reject">Reject</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('button[data-action]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const card = document.getElementById(`card-${btn.dataset.id}`);
+      card.querySelectorAll('button').forEach(b => b.disabled = true);
+      const res = await fetch(`/api/admin/${btn.dataset.action}/${btn.dataset.id}`, { method: 'POST' }).then(r => r.json());
+      const actionsDiv = card.querySelector('.actions');
+      if(res.ok && btn.dataset.action === 'approve'){
+        actionsDiv.outerHTML = `<div class="result-note approved">Approved — real Razorpay order created (${res.order.razorpay_order_id}). Customer can now pay via /pay/${res.order.id}.</div>`;
+      }else if(res.ok){
+        actionsDiv.outerHTML = `<div class="result-note rejected">Rejected — order closed, will not proceed.</div>`;
+      }
+    });
+  });
+}
+
+load();
+</script>
+</body>
+</html>

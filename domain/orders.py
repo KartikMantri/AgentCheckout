@@ -65,6 +65,69 @@ def create_order_raw(cart_id: str) -> dict:
     return {"ok": True, "order": get_order(order_id)}
 
 
+def create_pending_approval(cart_id: str) -> dict:
+    """A cart that was blocked by GR2 (order-value cap) gets frozen here
+    as a real record — a snapshot of the total at the moment it was
+    blocked, independent of whatever happens to the live cart
+    afterward. This is what makes 'escalated to a human' mean something
+    concrete instead of just a rejection message: there's now an actual
+    row a real merchant operator can review, approve, or reject."""
+    cart = get_cart(cart_id)
+    order_id = "PENDING-" + uuid.uuid4().hex[:8]
+    conn = connect()
+    conn.execute(
+        "INSERT INTO orders (id, cart_id, total, status, razorpay_order_id, created_at) VALUES (?, ?, ?, 'pending_approval', NULL, ?)",
+        (order_id, cart_id, cart["total"], datetime.now(timezone.utc).isoformat()),
+    )
+    conn.commit()
+    conn.close()
+    return get_order(order_id)
+
+
+def list_pending_approvals() -> list[dict]:
+    conn = connect()
+    rows = conn.execute(
+        "SELECT * FROM orders WHERE status = 'pending_approval' ORDER BY created_at DESC"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def approve_pending_order(order_id: str) -> dict:
+    """The actual completion of GR2's escalation path. A human (the
+    merchant operator, via /admin) reviewed the frozen total and
+    decided it's fine — only now does a real Razorpay order get
+    created, since there was no point creating one for every blocked
+    attempt regardless of whether a human ever approves it."""
+    order = get_order(order_id)
+    if order is None or order["status"] != "pending_approval":
+        return {"ok": False, "reason": "not_pending"}
+
+    from domain.payments import GATEWAY
+
+    razorpay_order_id = GATEWAY.create_order(order["total"] * 100, receipt=order_id)
+    conn = connect()
+    conn.execute(
+        "UPDATE orders SET status = 'created', razorpay_order_id = ? WHERE id = ?",
+        (razorpay_order_id, order_id),
+    )
+    conn.commit()
+    conn.close()
+    return {"ok": True, "order": get_order(order_id)}
+
+
+def reject_pending_order(order_id: str) -> dict:
+    order = get_order(order_id)
+    if order is None or order["status"] != "pending_approval":
+        return {"ok": False, "reason": "not_pending"}
+
+    conn = connect()
+    conn.execute("UPDATE orders SET status = 'rejected' WHERE id = ?", (order_id,))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "order": get_order(order_id)}
+
+
 def get_order(order_id: str) -> dict | None:
     conn = connect()
     row = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()

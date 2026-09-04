@@ -27,7 +27,15 @@ from domain.cart import clear_cart as clear_cart_raw
 from domain.cart import get_cart, init_cart_tables
 from domain.cart import remove_item as remove_item_raw
 from domain.catalog import init_db, list_all
-from domain.orders import create_order_raw, get_order, init_order_tables, verify_and_capture_payment
+from domain.orders import (
+    approve_pending_order,
+    create_order_raw,
+    get_order,
+    init_order_tables,
+    list_pending_approvals,
+    reject_pending_order,
+    verify_and_capture_payment,
+)
 from domain.payments import is_live
 
 init_db()
@@ -40,6 +48,7 @@ WEB_DIR = os.path.dirname(os.path.abspath(__file__))
 STORE_PATH = os.path.join(WEB_DIR, "store.html")
 CHAT_PATH = os.path.join(WEB_DIR, "index.html")
 PAY_PATH = os.path.join(WEB_DIR, "pay.html")
+ADMIN_PATH = os.path.join(WEB_DIR, "admin.html")
 
 
 class ChatRequest(BaseModel):
@@ -205,6 +214,46 @@ def verify_payment(req: VerifyPaymentRequest):
     widget. Verifies the signature server-side before trusting anything
     the browser sent back — see domain/orders.py for why."""
     return verify_and_capture_payment(req.order_id, req.razorpay_payment_id, req.razorpay_signature)
+
+
+@app.get("/admin")
+def admin_page():
+    """No authentication — a real merchant deployment would need it,
+    this is a hackathon demo of the mechanism, not a production admin
+    surface. Flagged honestly rather than pretended away."""
+    return FileResponse(ADMIN_PATH)
+
+
+@app.get("/api/admin/pending")
+def admin_pending():
+    pending = list_pending_approvals()
+    for order in pending:
+        order["items"] = get_cart(order["cart_id"])["items"]
+    return pending
+
+
+@app.post("/api/admin/approve/{order_id}")
+def admin_approve(order_id: str):
+    result = approve_pending_order(order_id)
+    log_event(
+        session_id="admin", actor="merchant_operator", tool="approve_pending_order",
+        args_json=f'{{"order_id": "{order_id}"}}',
+        verdict_json={"allowed": True, "reason": "human_approved", "escalation_required": False},
+        outcome_json=str(result), provider=None, model=None, is_failover=None, tokens=None, latency_ms=None,
+    )
+    return result
+
+
+@app.post("/api/admin/reject/{order_id}")
+def admin_reject(order_id: str):
+    result = reject_pending_order(order_id)
+    log_event(
+        session_id="admin", actor="merchant_operator", tool="reject_pending_order",
+        args_json=f'{{"order_id": "{order_id}"}}',
+        verdict_json={"allowed": True, "reason": "human_rejected", "escalation_required": False},
+        outcome_json=str(result), provider=None, model=None, is_failover=None, tokens=None, latency_ms=None,
+    )
+    return result
 
 
 if __name__ == "__main__":

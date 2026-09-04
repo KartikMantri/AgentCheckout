@@ -416,3 +416,27 @@ environment — only shows up when you test the actual dependency it
 affects, not just "does the tool return successfully." Mock and live
 mode returning superficially similar-shaped success responses is
 exactly what let this hide for as long as it did.
+
+## Post-submission — escalation now has a real second half
+
+"Escalated to a human" was a dead end three times over in live testing
+— a rejection message with nothing behind it. Built the actual
+completion: `create_pending_approval()` freezes a real record (order
+id, exact total, item snapshot) the moment GR2 blocks a create_order
+call, independent of whatever the live cart does afterward. A new
+`/admin` page (no auth — a real deployment needs it, flagged honestly,
+not pretended away) lists every pending record with Approve/Reject.
+Approving creates the actual Razorpay order at that point — not
+earlier, so nothing gets created for attempts nobody ever reviews —
+and the existing payment_link/pay-page flow picks it up unchanged.
+
+Verified the entire loop over MCP, no LLM cost: over-cap create_order
+-> pending_order_id returned -> shows in /api/admin/pending with
+correct item snapshot -> approve -> real Razorpay order_id appears ->
+/pay/{id} correctly switches from "waiting for review" to a working
+pay button. Reject path closes it out cleanly, disappears from the
+queue either way. Audit trail logs both with actor=merchant_operator,
+distinct from agent/customer_direct — the audit trail now has all
+three tiers of who-did-what: agent (blocked), customer_direct
+(bypasses that don't need a guardrail), merchant_operator (the actual
+human review GR2's escalation always should have led to).
