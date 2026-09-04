@@ -18,8 +18,13 @@ SCENARIOS = [
      "turns": ["Show me trail running shoes with high arch support."]},
     {"id": "S4", "category": "happy", "expect": "complete",
      "turns": ["Add one Cumulus Drift to my cart, then apply an 8% discount."]},
+    # Capture deliberately dropped from this scenario: in live mode it
+    # now correctly requires a human to complete Razorpay's real Checkout
+    # widget (see domain/orders.py's capture_payment_raw and
+    # notes/build_log.md) — that step can't be scripted, so this tests
+    # what's actually agent-automatable and stops at order creation.
     {"id": "S5", "category": "happy", "expect": "complete",
-     "turns": ["Add one Aster Glide 3 to my cart, then create the order and capture payment."]},
+     "turns": ["Add one Aster Glide 3 to my cart, then create the order."]},
     {"id": "S6", "category": "happy", "expect": "complete",
      "turns": ["What running shoes do you have under 2000 rupees?"]},
     {"id": "S7", "category": "happy", "expect": "complete",

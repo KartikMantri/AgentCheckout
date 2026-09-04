@@ -7,6 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%93%90</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
   :root{
     --paper: #eef1f4;
@@ -126,6 +127,24 @@
   .bubble strong{ font-weight: 600; color: var(--ink); }
   .bubble p{ margin: 0 0 8px; }
   .bubble p:last-child{ margin-bottom: 0; }
+
+  .payment-card{ border: 1px solid var(--line); background: var(--paper); padding: 12px 14px; max-width: 72ch; }
+  .payment-card .pc-head{ display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .payment-card .pc-order{ font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--ink-faint); }
+  .payment-card .pc-amount{ font-family: "IBM Plex Mono", monospace; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .payment-card .pc-mode{ font-family: "IBM Plex Mono", monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 6px; margin-bottom: 8px; display: inline-block; }
+  .payment-card .pc-mode.live{ color: var(--trusted); border: 1px solid var(--trusted); }
+  .payment-card .pc-mode.mock{ color: var(--untrusted); border: 1px solid var(--untrusted); }
+  .payment-card .pc-pay-btn{
+    width: 100%; background: var(--ink); color: var(--paper); border: none;
+    font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 12.5px;
+    padding: 9px; cursor: pointer; margin-top: 6px;
+  }
+  .payment-card .pc-pay-btn:hover{ background: var(--boundary); }
+  .payment-card .pc-pay-btn:disabled{ opacity: 0.5; cursor: default; }
+  .payment-card .pc-status{ font-family: "IBM Plex Mono", monospace; font-size: 11px; margin-top: 8px; }
+  .payment-card .pc-status.paid{ color: var(--trusted); }
+  .payment-card .pc-status.failed{ color: var(--boundary); }
 
   .typing{ display: inline-flex; gap: 4px; align-items: center; }
   .typing span{
@@ -418,6 +437,99 @@ function addLogEntries(events){
   logCount.textContent = logEntryTotal;
 }
 
+/* ---- real Razorpay checkout, triggered after the agent creates an order ---- */
+let RZP_CONFIG = null;
+async function getRazorpayConfig(){
+  if(RZP_CONFIG) return RZP_CONFIG;
+  RZP_CONFIG = await fetch('/api/razorpay-config').then(r => r.json());
+  return RZP_CONFIG;
+}
+
+function maybeShowPaymentCard(events){
+  if(!events) return;
+  const orderEvent = events.find(e => e.tool === 'create_order' && e.verdict_json && e.verdict_json.allowed);
+  if(!orderEvent) return;
+  let outcome;
+  try{ outcome = JSON.parse(orderEvent.outcome_json); }catch(e){ return; }
+  if(!outcome.ok || !outcome.order) return;
+  renderPaymentCard(outcome.order);
+}
+
+async function renderPaymentCard(order){
+  const cfg = await getRazorpayConfig();
+  emptyStateEl.style.display = 'none';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'msg agent';
+  wrap.innerHTML = `<span class="role">Payment</span>
+    <div class="payment-card" id="pcard-${order.id}">
+      <span class="pc-mode ${cfg.mode}">${cfg.mode === 'live' ? 'Razorpay test mode' : 'Simulated — no live credentials'}</span>
+      <div class="pc-head"><span class="pc-order mono">${order.id}</span><span class="pc-amount">Rs.${order.total}</span></div>
+      <button class="pc-pay-btn" id="pay-${order.id}">${cfg.mode === 'live' ? 'Pay with Razorpay' : 'Simulate payment'}</button>
+    </div>`;
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  document.getElementById(`pay-${order.id}`).addEventListener('click', () => startPayment(order, cfg));
+}
+
+function startPayment(order, cfg){
+  const btn = document.getElementById(`pay-${order.id}`);
+  const card = document.getElementById(`pcard-${order.id}`);
+
+  if(cfg.mode !== 'live'){
+    btn.disabled = true;
+    btn.textContent = 'Simulating...';
+    inputEl.value = `Capture payment for order ${order.id}.`;
+    sendMessage();
+    return;
+  }
+
+  const rzp = new Razorpay({
+    key: cfg.key_id,
+    amount: order.total * 100,
+    currency: 'INR',
+    order_id: order.razorpay_order_id,
+    name: 'AgentCheckout',
+    description: order.id,
+    theme: { color: '#161b22' },
+    handler: async function(response){
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+      try{
+        const res = await fetch('/api/verify-payment', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            order_id: order.id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          }),
+        });
+        const data = await res.json();
+        const status = document.createElement('div');
+        if(data.ok){
+          status.className = 'pc-status paid';
+          status.textContent = `Paid — ${data.payment.razorpay_payment_id}`;
+          btn.style.display = 'none';
+        }else{
+          status.className = 'pc-status failed';
+          status.textContent = `Verification failed: ${data.reason}`;
+          btn.disabled = false;
+          btn.textContent = 'Try again';
+        }
+        card.appendChild(status);
+      }catch(err){
+        btn.disabled = false;
+        btn.textContent = 'Try again';
+      }
+    },
+    modal: {
+      ondismiss: function(){ btn.disabled = false; btn.textContent = 'Pay with Razorpay'; },
+    },
+  });
+  rzp.open();
+}
+
 async function sendMessage(){
   const text = inputEl.value.trim();
   if(!text) return;
@@ -441,6 +553,7 @@ async function sendMessage(){
     addMessage(data.error ? 'system' : 'agent', data.reply);
     if(data.cart) renderCart(data.cart);
     addLogEntries(data.events);
+    maybeShowPaymentCard(data.events);
   }catch(err){
     removeTyping();
     addMessage('system', 'Could not reach the server: ' + err);

@@ -26,7 +26,7 @@ from an actual run of the 12 scripted scenarios, not rounded up.
 - **0 silent bypasses** (target: 0).
 
 ## M6 — Token economics
-Average **2654 tokens/conversation** across 12 logged sessions (target: <6,000 — see notes/build_log.md re: Groq's real free-tier TPM being far higher than the PRD assumed).
+Average **2620 tokens/conversation** across 12 logged sessions (target: <6,000 — see notes/build_log.md re: Groq's real free-tier TPM being far higher than the PRD assumed).
 
 ## Provider usage this run
 {'groq': 31} — 0 failover event(s) logged out of 31 total tool-call events.
