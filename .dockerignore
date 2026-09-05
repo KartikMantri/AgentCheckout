@@ -1,0 +1,9 @@
+.env
+.git
+.venv
+venv
+__pycache__
+*.pyc
+*.egg-info
+data/app.db
+data/audit_log.jsonl

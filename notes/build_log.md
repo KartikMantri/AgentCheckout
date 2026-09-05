@@ -513,3 +513,48 @@ returns `created` plus a working `payment_link`. The honesty
 requirement here matters more than the code: the system prompt is
 explicit that no real email gets sent in this demo, rather than
 implying one will arrive.
+
+## Post-submission — deployment prep: a real security gap in the Dockerfile, and a local-only SSL wall
+
+Preparing to deploy to Render surfaced a genuine gap: there was no
+`.dockerignore`. `.gitignore` only controls what git tracks — it has
+no effect on Docker's `COPY . .`, which copies literally everything in
+the build context regardless of git status. That meant the local
+`.env` (real Groq/Gemini/Razorpay keys) and the local SQLite DB would
+have been baked directly into the image layer on the first real
+deploy, gitignored or not. Added `.dockerignore` excluding `.env`,
+`.git`, `.venv`, `__pycache__`, and the local `data/app.db` +
+`data/audit_log.jsonl` (the seed catalog, `data/seed_catalog.json`,
+stays in — it's what a fresh container seeds its catalog from on
+first boot).
+
+Tried to verify the build locally and hit the exact same
+`SSLCertVerificationError` that blocked the real Razorpay API call
+earlier in this project (see the Step "self-inflicted SSL outage"
+entry above) — except this time inside Docker Desktop's Linux build
+VM, against plain pypi.org, with zero project code involved (a
+completely stock `python:3.12-slim` container couldn't even `pip
+install requests`). Confirmed this is the same local network/AV
+TLS-inspection root-CA issue, not a Dockerfile bug, by reproducing it
+against an empty base image before touching this project's
+Dockerfile at all.
+
+**Did not modify the shipped Dockerfile to work around this** —
+disabling pip's cert verification in the actual image would be a real
+security regression for the sake of a local-only networking quirk that
+won't exist on Render's own build infrastructure. Instead, verified
+correctness a different way: built a throwaway local-only image with
+`--trusted-host` pip flags (never committed, discarded immediately
+after use) purely to confirm the dependency set and app code are
+sound. That image built clean, ran, and: `/api/limits` returned the
+correct caps, `/` and `/admin` both returned 200, and `/api/catalog`
+returned all 18 seeded products — inside an actual container, with
+`$PORT`-driven startup exercised for real (mapped to a non-default
+host port), not just reviewed by eye.
+
+**Honest gap left in `DEPLOYMENT.md`:** the real, shipped Dockerfile
+has been reviewed statically and its dependency set + app logic
+verified via the throwaway image, but has not been built end-to-end on
+this machine using its own literal contents — that first real build
+needs to happen on Render itself, with build logs checked immediately
+rather than assumed clean.

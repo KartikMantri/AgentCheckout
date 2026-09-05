@@ -135,3 +135,10 @@ agentcheckout/
 ├── scripts/                # step1-13, each independently runnable
 └── notes/build_log.md      # dated, honest account of what broke and why
 ```
+
+## Deployment
+
+See `DEPLOYMENT.md` for the full Render deployment guide — required
+environment variables, the SQLite persistence caveat, and why the MCP
+server is a local-only piece (stdio, not a network service) that
+deploying the storefront doesn't change.
