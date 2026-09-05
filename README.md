@@ -138,7 +138,8 @@ agentcheckout/
 
 ## Deployment
 
-See `DEPLOYMENT.md` for the full Render deployment guide — required
-environment variables, the SQLite persistence caveat, and why the MCP
-server is a local-only piece (stdio, not a network service) that
-deploying the storefront doesn't change.
+**Live:** [agentcheckout.onrender.com](https://agentcheckout.onrender.com) — the Stridewell storefront, chat console, and merchant admin panel, all running for real, verified end to end (real Razorpay test-mode orders, real LLM calls, correct `payment_link`s pointing at this domain).
+
+**What this deployment does not cover: MCP.** `mcp_server/server.py` talks to an MCP client (Claude Desktop, or any other) over stdio — a local subprocess connection, not a network service — so deploying the storefront to Render has no effect on it and can't make it reachable remotely. The MCP side (an independent AI client hitting the exact same guardrails with zero code duplication) is demonstrated live in the walkthrough video instead: **[demo video link — added after upload]**.
+
+See `DEPLOYMENT.md` for the full Render deployment guide — required environment variables, the SQLite persistence caveat, and more detail on why MCP is local-only.
